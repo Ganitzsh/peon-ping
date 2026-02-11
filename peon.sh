@@ -495,9 +495,11 @@ if [ -n "$CATEGORY" ] && [ "$PAUSED" != "true" ]; then
   fi
 fi
 
-# --- Attention notification ---
+# --- Smart notification: only when terminal is NOT frontmost ---
 if [ -n "$NOTIFY" ] && [ "$PAUSED" != "true" ]; then
-  send_notification "$MSG" "$TITLE" "${NOTIFY_COLOR:-red}"
+  if ! terminal_is_focused; then
+    send_notification "$MSG" "$TITLE" "${NOTIFY_COLOR:-red}"
+  fi
 fi
 
 wait
