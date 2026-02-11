@@ -74,6 +74,41 @@ PROJECT="${CWD##*/}"
 # Sanitize PROJECT for safe interpolation into AppleScript/notifications
 PROJECT=$(printf '%s' "$PROJECT" | tr -cd '[:alnum:] ._-')
 
+# --- Check for updates (SessionStart only, once per day, non-blocking) ---
+if [ "$EVENT" = "SessionStart" ]; then
+  (
+    CHECK_FILE="$PEON_DIR/.last_update_check"
+    NOW=$(date +%s)
+    LAST_CHECK=0
+    [ -f "$CHECK_FILE" ] && LAST_CHECK=$(cat "$CHECK_FILE" 2>/dev/null || echo 0)
+    ELAPSED=$((NOW - LAST_CHECK))
+    # Only check once per day (86400 seconds)
+    if [ "$ELAPSED" -gt 86400 ]; then
+      echo "$NOW" > "$CHECK_FILE"
+      LOCAL_VERSION=""
+      [ -f "$PEON_DIR/VERSION" ] && LOCAL_VERSION=$(cat "$PEON_DIR/VERSION" | tr -d '[:space:]')
+      REMOTE_VERSION=$(curl -fsSL --connect-timeout 3 --max-time 5 \
+        "https://raw.githubusercontent.com/tonyyont/peon-ping/main/VERSION" 2>/dev/null | tr -d '[:space:]')
+      if [ -n "$REMOTE_VERSION" ] && [ -n "$LOCAL_VERSION" ] && [ "$REMOTE_VERSION" != "$LOCAL_VERSION" ]; then
+        # Write update notice to a file so we can display it
+        echo "$REMOTE_VERSION" > "$PEON_DIR/.update_available"
+      else
+        rm -f "$PEON_DIR/.update_available"
+      fi
+    fi
+  ) &>/dev/null &
+fi
+
+# --- Show update notice (if available, on SessionStart only) ---
+if [ "$EVENT" = "SessionStart" ] && [ -f "$PEON_DIR/.update_available" ]; then
+  NEW_VER=$(cat "$PEON_DIR/.update_available" 2>/dev/null | tr -d '[:space:]')
+  CUR_VER=""
+  [ -f "$PEON_DIR/VERSION" ] && CUR_VER=$(cat "$PEON_DIR/VERSION" | tr -d '[:space:]')
+  if [ -n "$NEW_VER" ]; then
+    echo "peon-ping update available: ${CUR_VER:-?} → $NEW_VER — run: curl -fsSL https://raw.githubusercontent.com/tonyyont/peon-ping/main/install.sh | bash" >&2
+  fi
+fi
+
 # --- Check annoyed state (rapid prompts) ---
 check_annoyed() {
   /usr/bin/python3 -c "

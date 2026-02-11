@@ -89,11 +89,21 @@ Add your pack name to the `PACKS` variable:
 PACKS="peon ra2_soviet_engineer my_pack"
 ```
 
-### 4. Add web audio (optional)
+### 4. Bump the version
+
+We use [semver](https://semver.org/). Edit the `VERSION` file in the repo root:
+
+- **New sound pack** → bump the patch version (e.g. `1.0.0` → `1.0.1`)
+- **New feature** (new hook event, config option) → bump the minor version (e.g. `1.0.1` → `1.1.0`)
+- **Breaking change** (config format change, removed feature) → bump the major version
+
+Users with an older version will see an update notice on session start.
+
+### 5. Add web audio (optional)
 
 If you want your sounds playable on the landing page, copy them to `docs/audio/`.
 
-### 5. Submit a PR
+### 6. Submit a PR
 
 That's it. We'll review and merge.
 

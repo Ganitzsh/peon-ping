@@ -65,6 +65,7 @@ if [ -n "$SCRIPT_DIR" ]; then
   # Local clone — copy files directly (including sounds)
   cp -r "$SCRIPT_DIR/packs/"* "$INSTALL_DIR/packs/"
   cp "$SCRIPT_DIR/peon.sh" "$INSTALL_DIR/"
+  cp "$SCRIPT_DIR/VERSION" "$INSTALL_DIR/"
   if [ "$UPDATING" = false ]; then
     cp "$SCRIPT_DIR/config.json" "$INSTALL_DIR/"
   fi
@@ -72,6 +73,7 @@ else
   # curl|bash — download from GitHub (sounds are version-controlled in repo)
   echo "Downloading from GitHub..."
   curl -fsSL "$REPO_BASE/peon.sh" -o "$INSTALL_DIR/peon.sh"
+  curl -fsSL "$REPO_BASE/VERSION" -o "$INSTALL_DIR/VERSION"
   curl -fsSL "$REPO_BASE/uninstall.sh" -o "$INSTALL_DIR/uninstall.sh"
   for pack in $PACKS; do
     curl -fsSL "$REPO_BASE/packs/$pack/manifest.json" -o "$INSTALL_DIR/packs/$pack/manifest.json"
