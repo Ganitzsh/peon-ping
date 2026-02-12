@@ -16,9 +16,7 @@
     },
     "complete": {
       "sounds": [
-        { "file": "GoodToGoSir.mp3", "line": "Good to go, sir (SCV)" },
-        { "file": "IReadYou.mp3", "line": "I read you (SCV)" },
-        { "file": "OrdersCapn.mp3", "line": "Orders, Cap'n (SCV)" }
+        { "file": "GoodToGoSir.mp3", "line": "Good to go, sir (SCV)" }
       ]
     },
     "error": {
