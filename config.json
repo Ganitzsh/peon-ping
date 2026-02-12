@@ -12,5 +12,6 @@
     "annoyed": true
   },
   "annoyed_threshold": 3,
-  "annoyed_window_seconds": 10
+  "annoyed_window_seconds": 10,
+  "pack_rotation": []
 }

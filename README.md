@@ -74,6 +74,7 @@ Edit `~/.claude/hooks/peon-ping/config.json`:
 - **volume**: 0.0–1.0 (quiet enough for the office)
 - **categories**: Toggle individual sound types on/off
 - **annoyed_threshold / annoyed_window_seconds**: How many prompts in N seconds triggers the easter egg
+- **pack_rotation**: Array of pack names (e.g. `["peon", "sc_kerrigan", "peasant"]`). Each Claude Code session randomly gets one pack from the list and keeps it for the whole session. Leave empty `[]` to use `active_pack` instead.
 
 ## Sound packs
 

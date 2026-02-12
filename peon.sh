@@ -273,6 +273,7 @@ if str(cfg.get('enabled', True)).lower() == 'false':
 
 volume = cfg.get('volume', 0.5)
 active_pack = cfg.get('active_pack', 'peon')
+pack_rotation = cfg.get('pack_rotation', [])
 annoyed_threshold = int(cfg.get('annoyed_threshold', 3))
 annoyed_window = float(cfg.get('annoyed_window_seconds', 10))
 cats = cfg.get('categories', {})
@@ -307,6 +308,17 @@ if perm_mode and perm_mode in agent_modes:
 elif session_id in agent_sessions:
     print('PEON_EXIT=true')
     sys.exit(0)
+
+# --- Pack rotation: pin a random pack per session ---
+if pack_rotation:
+    session_packs = state.get('session_packs', {})
+    if session_id in session_packs and session_packs[session_id] in pack_rotation:
+        active_pack = session_packs[session_id]
+    else:
+        active_pack = random.choice(pack_rotation)
+        session_packs[session_id] = active_pack
+        state['session_packs'] = session_packs
+        state_dirty = True
 
 # --- Project name ---
 project = cwd.rsplit('/', 1)[-1] if cwd else 'claude'

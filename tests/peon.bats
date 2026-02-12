@@ -435,3 +435,57 @@ JSON
   [[ "$output" == *"Unknown option"* ]]
   [[ "$output" == *"peon --help"* ]]
 }
+
+# ============================================================
+# Pack rotation
+# ============================================================
+
+@test "pack_rotation picks a pack from the list" {
+  cat > "$TEST_DIR/config.json" <<'JSON'
+{
+  "active_pack": "peon", "volume": 0.5, "enabled": true,
+  "categories": {},
+  "pack_rotation": ["sc_kerrigan"]
+}
+JSON
+  run_peon '{"hook_event_name":"SessionStart","cwd":"/tmp/myproject","session_id":"rot1","permission_mode":"default"}'
+  [ "$PEON_EXIT" -eq 0 ]
+  afplay_was_called
+  sound=$(afplay_sound)
+  # Should use sc_kerrigan pack, not peon
+  [[ "$sound" == *"/packs/sc_kerrigan/sounds/"* ]]
+}
+
+@test "pack_rotation keeps same pack within a session" {
+  cat > "$TEST_DIR/config.json" <<'JSON'
+{
+  "active_pack": "peon", "volume": 0.5, "enabled": true,
+  "categories": {},
+  "pack_rotation": ["sc_kerrigan"]
+}
+JSON
+  # First event pins the pack
+  run_peon '{"hook_event_name":"SessionStart","cwd":"/tmp/myproject","session_id":"rot2","permission_mode":"default"}'
+  sound1=$(afplay_sound)
+  [[ "$sound1" == *"/packs/sc_kerrigan/sounds/"* ]]
+
+  # Second event with same session_id uses same pack
+  run_peon '{"hook_event_name":"Stop","cwd":"/tmp/myproject","session_id":"rot2","permission_mode":"default"}'
+  sound2=$(afplay_sound)
+  [[ "$sound2" == *"/packs/sc_kerrigan/sounds/"* ]]
+}
+
+@test "empty pack_rotation falls back to active_pack" {
+  cat > "$TEST_DIR/config.json" <<'JSON'
+{
+  "active_pack": "peon", "volume": 0.5, "enabled": true,
+  "categories": {},
+  "pack_rotation": []
+}
+JSON
+  run_peon '{"hook_event_name":"SessionStart","cwd":"/tmp/myproject","session_id":"rot3","permission_mode":"default"}'
+  [ "$PEON_EXIT" -eq 0 ]
+  afplay_was_called
+  sound=$(afplay_sound)
+  [[ "$sound" == *"/packs/peon/sounds/"* ]]
+}
