@@ -1500,7 +1500,7 @@ html { scrollbar-width: thin; scrollbar-color: var(--wc3-card-border) var(--wc3-
 fetch('https://peonping.github.io/registry/index.json')
   .then(r => r.json())
   .then(data => {
-    const count = Array.isArray(data) ? data.length : Object.keys(data).length;
+    const count = Array.isArray(data) ? data.length : (data.packs ? data.packs.length : Object.keys(data).length);
     document.querySelectorAll('.pack-count').forEach(el => { el.textContent = count + '+'; });
   })
   .catch(() => {}); // keep fallback "40+" on failure
