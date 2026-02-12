@@ -9,43 +9,43 @@ setup_test_env() {
   mkdir -p "$TEST_DIR/packs/peon/sounds"
   mkdir -p "$TEST_DIR/packs/sc_kerrigan/sounds"
 
-  # Create minimal manifest
+  # Create minimal manifest (CESP category names)
   cat > "$TEST_DIR/packs/peon/manifest.json" <<'JSON'
 {
   "name": "peon",
   "display_name": "Orc Peon",
   "categories": {
-    "greeting": {
+    "session.start": {
       "sounds": [
-        { "file": "Hello1.wav", "line": "Ready to work?" },
-        { "file": "Hello2.wav", "line": "Yes?" }
+        { "file": "Hello1.wav", "label": "Ready to work?" },
+        { "file": "Hello2.wav", "label": "Yes?" }
       ]
     },
-    "acknowledge": {
+    "task.acknowledge": {
       "sounds": [
-        { "file": "Ack1.wav", "line": "Work, work." }
+        { "file": "Ack1.wav", "label": "Work, work." }
       ]
     },
-    "complete": {
+    "task.complete": {
       "sounds": [
-        { "file": "Done1.wav", "line": "Something need doing?" },
-        { "file": "Done2.wav", "line": "Ready to work?" }
+        { "file": "Done1.wav", "label": "Something need doing?" },
+        { "file": "Done2.wav", "label": "Ready to work?" }
       ]
     },
-    "error": {
+    "task.error": {
       "sounds": [
-        { "file": "Error1.wav", "line": "Me not that kind of orc!" }
+        { "file": "Error1.wav", "label": "Me not that kind of orc!" }
       ]
     },
-    "permission": {
+    "input.required": {
       "sounds": [
-        { "file": "Perm1.wav", "line": "Something need doing?" },
-        { "file": "Perm2.wav", "line": "Hmm?" }
+        { "file": "Perm1.wav", "label": "Something need doing?" },
+        { "file": "Perm2.wav", "label": "Hmm?" }
       ]
     },
-    "annoyed": {
+    "user.spam": {
       "sounds": [
-        { "file": "Angry1.wav", "line": "Me busy, leave me alone!" }
+        { "file": "Angry1.wav", "label": "Me busy, leave me alone!" }
       ]
     }
   }
@@ -63,14 +63,14 @@ JSON
   "name": "sc_kerrigan",
   "display_name": "Sarah Kerrigan (StarCraft)",
   "categories": {
-    "greeting": {
+    "session.start": {
       "sounds": [
-        { "file": "Hello1.wav", "line": "What now?" }
+        { "file": "Hello1.wav", "label": "What now?" }
       ]
     },
-    "complete": {
+    "task.complete": {
       "sounds": [
-        { "file": "Done1.wav", "line": "I gotcha." }
+        { "file": "Done1.wav", "label": "I gotcha." }
       ]
     }
   }
@@ -81,20 +81,20 @@ JSON
     touch "$TEST_DIR/packs/sc_kerrigan/sounds/$f"
   done
 
-  # Create default config
+  # Create default config (CESP category names)
   cat > "$TEST_DIR/config.json" <<'JSON'
 {
   "active_pack": "peon",
   "volume": 0.5,
   "enabled": true,
   "categories": {
-    "greeting": true,
-    "acknowledge": true,
-    "complete": true,
-    "error": true,
-    "permission": true,
-    "resource_limit": true,
-    "annoyed": true
+    "session.start": true,
+    "task.acknowledge": true,
+    "task.complete": true,
+    "task.error": true,
+    "input.required": true,
+    "resource.limit": true,
+    "user.spam": true
   },
   "annoyed_threshold": 3,
   "annoyed_window_seconds": 10

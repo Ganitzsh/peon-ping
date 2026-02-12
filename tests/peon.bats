@@ -114,7 +114,7 @@ JSON
   cat > "$TEST_DIR/config.json" <<'JSON'
 {
   "active_pack": "peon", "volume": 0.5, "enabled": true,
-  "categories": { "greeting": false }
+  "categories": { "session.start": false }
 }
 JSON
   run_peon '{"hook_event_name":"SessionStart","cwd":"/tmp/myproject","session_id":"s1","permission_mode":"default"}'
@@ -228,7 +228,7 @@ JSON
   cat > "$TEST_DIR/config.json" <<'JSON'
 {
   "active_pack": "peon", "volume": 0.5, "enabled": true,
-  "categories": { "annoyed": false },
+  "categories": { "user.spam": false },
   "annoyed_threshold": 3, "annoyed_window_seconds": 10
 }
 JSON
