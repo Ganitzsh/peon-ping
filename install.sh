@@ -370,11 +370,52 @@ else
 fi
 
 # --- Download sound packs ---
+PACK_ARRAY=($PACKS)
+TOTAL_PACKS=${#PACK_ARRAY[@]}
+PACK_INDEX=0
+
+IS_TTY=false
+[ -t 1 ] && IS_TTY=true
+
+TOTAL_DOWNLOAD_FILES=0
+TOTAL_DOWNLOAD_BYTES=0
+TOTAL_DOWNLOAD_PACKS=0
+
+draw_progress() {
+  local pidx="$1" ptotal="$2" pname="$3"
+  local cur="$4" total="$5" bytes="$6"
+  local idx_width=${#ptotal}
+  local bar_width=20 filled=0 empty i bar=""
+
+  if [ "$total" -gt 0 ]; then
+    filled=$(( cur * bar_width / total ))
+  fi
+  empty=$(( bar_width - filled ))
+  for (( i=0; i<filled; i++ )); do bar+="#"; done
+  for (( i=0; i<empty; i++ )); do bar+="-"; done
+
+  local size_str
+  if [ "$bytes" -ge 1048576 ]; then
+    size_str="$(( bytes / 1048576 )).$(( (bytes % 1048576) * 10 / 1048576 )) MB"
+  elif [ "$bytes" -ge 1024 ]; then
+    size_str="$(( bytes / 1024 )) KB"
+  else
+    size_str="$bytes B"
+  fi
+
+  printf "\r  [%${idx_width}d/%d] %-20s [%s] %d/%d (%s)%-10s" \
+    "$pidx" "$ptotal" "$pname" "$bar" "$cur" "$total" "$size_str" ""
+}
+
+echo ""
+echo "Downloading packs..."
 for pack in $PACKS; do
   if ! is_safe_pack_name "$pack"; then
     echo "  Warning: skipping invalid pack name: $pack" >&2
     continue
   fi
+
+  PACK_INDEX=$((PACK_INDEX + 1))
 
   mkdir -p "$INSTALL_DIR/packs/$pack/sounds"
 
@@ -429,7 +470,61 @@ for p in data.get('packs', []):
 
   # Download sound files
   manifest="$INSTALL_DIR/packs/$pack/openpeon.json"
-  python3 -c "
+  SOUND_COUNT=$(python3 -c "
+import json, os
+m = json.load(open('$manifest'))
+seen = set()
+for cat in m.get('categories', {}).values():
+    for s in cat.get('sounds', []):
+        seen.add(os.path.basename(s['file']))
+print(len(seen))
+" 2>/dev/null || echo "?")
+
+  if [ "$IS_TTY" = true ] && [ "$SOUND_COUNT" != "?" ]; then
+    local_file_count=0
+    local_byte_count=0
+
+    draw_progress "$PACK_INDEX" "$TOTAL_PACKS" "$pack" 0 "$SOUND_COUNT" 0
+
+    while read -r sfile; do
+      if ! is_safe_filename "$sfile"; then
+        echo "  Warning: skipped unsafe filename in $pack: $sfile" >&2
+        continue
+      fi
+      if curl -fsSL "$PACK_BASE/sounds/$sfile" \
+           -o "$INSTALL_DIR/packs/$pack/sounds/$sfile" </dev/null 2>/dev/null; then
+        local_file_count=$((local_file_count + 1))
+        fsize=$(wc -c < "$INSTALL_DIR/packs/$pack/sounds/$sfile" | tr -d ' ')
+        local_byte_count=$((local_byte_count + fsize))
+      else
+        echo "  Warning: failed to download $pack/sounds/$sfile" >&2
+      fi
+      draw_progress "$PACK_INDEX" "$TOTAL_PACKS" "$pack" \
+        "$local_file_count" "$SOUND_COUNT" "$local_byte_count"
+    done < <(python3 -c "
+import json, os
+m = json.load(open('$manifest'))
+seen = set()
+for cat in m.get('categories', {}).values():
+    for s in cat.get('sounds', []):
+        f = s['file']
+        basename = os.path.basename(f)
+        if basename not in seen:
+            seen.add(basename)
+            print(basename)
+")
+
+    draw_progress "$PACK_INDEX" "$TOTAL_PACKS" "$pack" \
+      "$local_file_count" "$SOUND_COUNT" "$local_byte_count"
+    printf "\n"
+
+    TOTAL_DOWNLOAD_FILES=$((TOTAL_DOWNLOAD_FILES + local_file_count))
+    TOTAL_DOWNLOAD_BYTES=$((TOTAL_DOWNLOAD_BYTES + local_byte_count))
+    TOTAL_DOWNLOAD_PACKS=$((TOTAL_DOWNLOAD_PACKS + 1))
+  else
+    printf "  [%d/%d] %s " "$PACK_INDEX" "$TOTAL_PACKS" "$pack"
+
+    python3 -c "
 import json, os
 m = json.load(open('$manifest'))
 seen = set()
@@ -441,15 +536,34 @@ for cat in m.get('categories', {}).values():
             seen.add(basename)
             print(basename)
 " | while read -r sfile; do
-    if ! is_safe_filename "$sfile"; then
-      echo "  Warning: skipped unsafe filename in $pack: $sfile" >&2
-      continue
-    fi
-    if ! curl -fsSL "$PACK_BASE/sounds/$sfile" -o "$INSTALL_DIR/packs/$pack/sounds/$sfile" </dev/null 2>/dev/null; then
-      echo "  Warning: failed to download $pack/sounds/$sfile" >&2
-    fi
-  done
+      if ! is_safe_filename "$sfile"; then
+        echo "  Warning: skipped unsafe filename in $pack: $sfile" >&2
+        continue
+      fi
+      if curl -fsSL "$PACK_BASE/sounds/$sfile" -o "$INSTALL_DIR/packs/$pack/sounds/$sfile" </dev/null 2>/dev/null; then
+        printf "."
+      else
+        printf "x"
+        echo "  Warning: failed to download $pack/sounds/$sfile" >&2
+      fi
+    done
+
+    printf " %s sounds\n" "$SOUND_COUNT"
+    TOTAL_DOWNLOAD_PACKS=$((TOTAL_DOWNLOAD_PACKS + 1))
+  fi
 done
+
+if [ "$IS_TTY" = true ] && [ "$TOTAL_DOWNLOAD_PACKS" -gt 0 ]; then
+  if [ "$TOTAL_DOWNLOAD_BYTES" -ge 1048576 ]; then
+    SUMMARY_SIZE="$(( TOTAL_DOWNLOAD_BYTES / 1048576 )).$(( (TOTAL_DOWNLOAD_BYTES % 1048576) * 10 / 1048576 )) MB"
+  elif [ "$TOTAL_DOWNLOAD_BYTES" -ge 1024 ]; then
+    SUMMARY_SIZE="$(( TOTAL_DOWNLOAD_BYTES / 1024 )) KB"
+  else
+    SUMMARY_SIZE="$TOTAL_DOWNLOAD_BYTES B"
+  fi
+  echo ""
+  echo "Downloaded $TOTAL_DOWNLOAD_PACKS packs ($TOTAL_DOWNLOAD_FILES files, $SUMMARY_SIZE)"
+fi
 
 chmod +x "$INSTALL_DIR/peon.sh"
 chmod +x "$INSTALL_DIR/relay.sh"
