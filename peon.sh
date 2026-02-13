@@ -7,7 +7,7 @@ set -uo pipefail
 detect_platform() {
   case "$(uname -s)" in
     Darwin)
-      if [ -n "${SSH_CONNECTION:-}" ] || [ -n "${SSH_CLIENT:-}" ]; thentele
+      if [ -n "${SSH_CONNECTION:-}" ] || [ -n "${SSH_CLIENT:-}" ]; then
         echo "ssh"
       else
         echo "mac"
