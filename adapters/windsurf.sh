@@ -47,7 +47,7 @@ case "$WINDSURF_EVENT" in
     ;;
 esac
 
-SESSION_ID="windsurf-$$"
+SESSION_ID="windsurf-${PPID:-$$}"
 CWD="${PWD}"
 
 echo "{\"hook_event_name\":\"$EVENT\",\"notification_type\":\"\",\"cwd\":\"$CWD\",\"session_id\":\"$SESSION_ID\",\"permission_mode\":\"\"}" \

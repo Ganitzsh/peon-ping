@@ -108,18 +108,31 @@ JSON
 # ============================================================
 
 @test "rapid Windsurf prompts trigger annoyed sound" {
-  # Each adapter invocation gets a unique $$ (PID) as session_id.
-  # To test spam detection, call peon.sh directly with a fixed session_id
-  # (same approach the adapter would produce if Windsurf reused a process).
-  export PEON_TEST=1
+  # Adapter uses PPID for session_id, which is stable across invocations
+  # within the same shell, so spam detection works through the adapter.
   for i in $(seq 1 3); do
-    echo '{"hook_event_name":"UserPromptSubmit","notification_type":"","cwd":"/tmp/t","session_id":"windsurf-fixed","permission_mode":""}' \
-      | bash "$PEON_SH" 2>/dev/null
-    sleep 0.3
+    run_windsurf pre_user_prompt
   done
   afplay_was_called
   sound=$(afplay_sound)
   [[ "$sound" == *"Angry1.wav" ]]
+}
+
+# ============================================================
+# Debounce
+# ============================================================
+
+@test "second Stop within debounce window is suppressed" {
+  run_windsurf post_cascade_response
+  [ "$WINDSURF_EXIT" -eq 0 ]
+  count1=$(afplay_call_count)
+  [ "$count1" = "1" ]
+
+  # Second stop within debounce window should be suppressed
+  run_windsurf post_cascade_response
+  [ "$WINDSURF_EXIT" -eq 0 ]
+  count2=$(afplay_call_count)
+  [ "$count2" = "1" ]
 }
 
 # ============================================================
