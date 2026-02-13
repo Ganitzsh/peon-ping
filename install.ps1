@@ -347,11 +347,29 @@ try {
 $hookEvent = $event.hook_event_name
 if (-not $hookEvent) { exit 0 }
 
+# Helper function to convert PSCustomObject to hashtable (PS 5.1 compat)
+function ConvertTo-Hashtable {
+    param([Parameter(ValueFromPipeline)]$obj)
+    if ($obj -is [hashtable]) { return $obj }
+    if ($obj -is [System.Collections.IEnumerable] -and $obj -isnot [string]) {
+        return @($obj | ForEach-Object { ConvertTo-Hashtable $_ })
+    }
+    if ($obj -is [PSCustomObject]) {
+        $ht = @{}
+        foreach ($prop in $obj.PSObject.Properties) {
+            $ht[$prop.Name] = ConvertTo-Hashtable $prop.Value
+        }
+        return $ht
+    }
+    return $obj
+}
+
 # Read state
 $state = @{}
 try {
     if (Test-Path $StatePath) {
-        $state = Get-Content $StatePath -Raw | ConvertFrom-Json -AsHashtable
+        $stateObj = Get-Content $StatePath -Raw | ConvertFrom-Json
+        $state = ConvertTo-Hashtable $stateObj
     }
 } catch {
     $state = @{}
@@ -520,11 +538,29 @@ Write-Host "Registering Claude Code hooks..."
 
 $hookCmd = "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$hookScriptPath`""
 
+# Helper function to convert PSCustomObject to hashtable (PS 5.1 compat)
+function ConvertTo-Hashtable {
+    param([Parameter(ValueFromPipeline)]$obj)
+    if ($obj -is [hashtable]) { return $obj }
+    if ($obj -is [System.Collections.IEnumerable] -and $obj -isnot [string]) {
+        return @($obj | ForEach-Object { ConvertTo-Hashtable $_ })
+    }
+    if ($obj -is [PSCustomObject]) {
+        $ht = @{}
+        foreach ($prop in $obj.PSObject.Properties) {
+            $ht[$prop.Name] = ConvertTo-Hashtable $prop.Value
+        }
+        return $ht
+    }
+    return $obj
+}
+
 # Load or create settings
 $settings = @{}
 if (Test-Path $SettingsFile) {
     try {
-        $settings = Get-Content $SettingsFile -Raw | ConvertFrom-Json -AsHashtable
+        $settingsObj = Get-Content $SettingsFile -Raw | ConvertFrom-Json
+        $settings = ConvertTo-Hashtable $settingsObj
     } catch {
         $settings = @{}
     }
