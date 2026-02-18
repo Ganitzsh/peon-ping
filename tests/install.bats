@@ -438,3 +438,35 @@ MOCK_CURL
   # Check that curl was called with %3F instead of literal ?
   grep -q '%3F' "$TEST_HOME/curl_urls.log"
 }
+
+# ============================================================
+# OpenClaw install support
+# ============================================================
+
+@test "--openclaw installs to ~/.openclaw/hooks/peon-ping" {
+  mkdir -p "$TEST_HOME/.openclaw"
+  bash "$CLONE_DIR/install.sh" --openclaw
+  [ -f "$TEST_HOME/.openclaw/hooks/peon-ping/peon.sh" ]
+  [ -f "$TEST_HOME/.openclaw/hooks/peon-ping/config.json" ]
+}
+
+@test "--openclaw creates skill file at ~/.openclaw/skills/peon-ping/SKILL.md" {
+  mkdir -p "$TEST_HOME/.openclaw"
+  bash "$CLONE_DIR/install.sh" --openclaw
+  [ -f "$TEST_HOME/.openclaw/skills/peon-ping/SKILL.md" ]
+  grep -q "peon-ping" "$TEST_HOME/.openclaw/skills/peon-ping/SKILL.md"
+}
+
+@test "--openclaw does not create settings.json" {
+  mkdir -p "$TEST_HOME/.openclaw"
+  bash "$CLONE_DIR/install.sh" --openclaw
+  [ ! -f "$TEST_HOME/.openclaw/settings.json" ]
+}
+
+@test "auto-detects openclaw when ~/.openclaw exists and ~/.claude does not" {
+  rm -rf "$TEST_HOME/.claude"
+  mkdir -p "$TEST_HOME/.openclaw"
+  bash "$CLONE_DIR/install.sh"
+  [ -f "$TEST_HOME/.openclaw/hooks/peon-ping/peon.sh" ]
+  [ -f "$TEST_HOME/.openclaw/skills/peon-ping/SKILL.md" ]
+}
