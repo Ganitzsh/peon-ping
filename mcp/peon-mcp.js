@@ -86,32 +86,54 @@ function detectLinuxPlayer() {
   return null;
 }
 
-function playFile(filePath, volume) {
-  const plat = detectPlatform();
-  let cmd, args;
-  switch (plat) {
-    case "mac":
-      cmd = "afplay"; args = ["-v", String(volume), filePath]; break;
-    case "linux": {
-      const player = detectLinuxPlayer();
-      if (!player) return;
-      cmd = player;
-      const v = volume;
-      if (player === "pw-play" || player === "paplay") args = ["--volume", String(Math.round(v * 65536)), filePath];
-      else if (player === "ffplay") args = ["-nodisp", "-autoexit", "-volume", String(Math.round(v * 100)), filePath];
-      else if (player === "mpv") args = ["--no-video", `--volume=${Math.round(v * 100)}`, filePath];
-      else if (player === "play") args = ["-v", String(v), filePath];
-      else args = [filePath];
-      break;
+function playFileSync(filePath, volume) {
+  return new Promise((resolve) => {
+    const plat = detectPlatform();
+    let cmd, args;
+    switch (plat) {
+      case "mac":
+        cmd = "afplay"; args = ["-v", String(volume), filePath]; break;
+      case "linux": {
+        const player = detectLinuxPlayer();
+        if (!player) { resolve(); return; }
+        cmd = player;
+        const v = volume;
+        if (player === "pw-play" || player === "paplay") args = ["--volume", String(Math.round(v * 65536)), filePath];
+        else if (player === "ffplay") args = ["-nodisp", "-autoexit", "-volume", String(Math.round(v * 100)), filePath];
+        else if (player === "mpv") args = ["--no-video", `--volume=${Math.round(v * 100)}`, filePath];
+        else if (player === "play") args = ["-v", String(v), filePath];
+        else args = [filePath];
+        break;
+      }
+      case "wsl":
+        cmd = "powershell.exe";
+        args = ["-NoProfile", "-Command", `$p=New-Object Media.SoundPlayer '${filePath.replace(/\//g, "\\")}';$p.PlaySync()`];
+        break;
+      default: resolve(); return;
     }
-    case "wsl":
-      cmd = "powershell.exe";
-      args = ["-NoProfile", "-Command", `$p=New-Object Media.SoundPlayer '${filePath.replace(/\//g, "\\")}';$p.PlaySync()`];
-      break;
-    default: return;
+    const child = spawn(cmd, args, { stdio: "ignore" });
+    child.on("close", () => resolve());
+    child.on("error", () => resolve());
+  });
+}
+
+// ── Sound queue (sequential, non-blocking tool calls) ──────────────────────
+
+const soundQueue = [];
+let draining = false;
+
+function enqueue(filePath, volume) {
+  soundQueue.push({ filePath, volume });
+  if (!draining) drain();
+}
+
+async function drain() {
+  draining = true;
+  while (soundQueue.length > 0) {
+    const { filePath, volume: vol } = soundQueue.shift();
+    await playFileSync(filePath, vol);
   }
-  const child = spawn(cmd, args, { stdio: "ignore", detached: true });
-  child.unref();
+  draining = false;
 }
 
 // ── MCP Server ─────────────────────────────────────────────────────────────
@@ -190,9 +212,8 @@ server.tool(
       const r = resolveSound(pack, name);
       if (r.error) { results.push(`❌ ${r.error}`); continue; }
       if (!existsSync(r.file)) { results.push(`❌ File missing: ${keys[i]}`); continue; }
-      playFile(r.file, volume);
+      enqueue(r.file, volume);
       results.push(`🔊 ${keys[i]} ("${r.label}")`);
-      if (i < keys.length - 1) await new Promise((res) => setTimeout(res, 300));
     }
     return { content: [{ type: "text", text: results.join("\n") }] };
   }
