@@ -1231,6 +1231,13 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="feature-card">
+              <div className="feature-icon">{"⚡"}</div>
+              <div className="feature-text">
+                <h3>MCP server</h3>
+                <p>Any AI agent can call <code>play_sound</code> directly. Agent picks Duke Nukem when the build fails — not your hooks.</p>
+              </div>
+            </div>
+            <div className="feature-card">
               <div className="feature-icon">{"\uD83D\uDCE6"}</div>
               <div className="feature-text">
                 <h3>Pack system</h3>
