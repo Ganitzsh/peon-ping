@@ -16,6 +16,7 @@
   "annoyed_window_seconds": 10,
   "silent_window_seconds": 0,
   "suppress_subagent_complete": false,
+  "no_rc": false,
   "pack_rotation": [],
   "pack_rotation_mode": "random",
   "session_ttl_days": 7,

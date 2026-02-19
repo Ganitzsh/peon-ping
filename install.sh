@@ -9,6 +9,7 @@ INIT_LOCAL_CONFIG=false
 INSTALL_ALL=false
 CUSTOM_PACKS=""
 OPENCLAW_MODE=false
+NO_RC=false
 for arg in "$@"; do
   case "$arg" in
     --global) LOCAL_MODE=false ;;
@@ -16,6 +17,7 @@ for arg in "$@"; do
     --openclaw) OPENCLAW_MODE=true ;;
     --init-local-config) INIT_LOCAL_CONFIG=true ;;
     --all) INSTALL_ALL=true ;;
+    --no-rc) NO_RC=true ;;
     --packs=*) CUSTOM_PACKS="${arg#--packs=}" ;;
     --help|-h)
       cat <<'HELPEOF'
@@ -27,6 +29,7 @@ Options:
   --openclaw           Install as OpenClaw skill (~/.openclaw/skills)
   --init-local-config  Create local config only, then exit
   --all                Install all packs
+  --no-rc              Skip .bashrc/.zshrc/fish config modifications
   --packs=<a,b,c>      Install specific packs
 HELPEOF
       exit 0
@@ -37,6 +40,19 @@ done
 GLOBAL_BASE="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 LOCAL_BASE="$PWD/.claude"
 OPENCLAW_BASE="$HOME/.openclaw"
+
+# Respect no_rc from config.json if --no-rc wasn't passed on CLI
+if [ "$NO_RC" = false ]; then
+  for _cfg in "$GLOBAL_BASE/hooks/peon-ping/config.json" "$LOCAL_BASE/hooks/peon-ping/config.json"; do
+    if [ -f "$_cfg" ]; then
+      _no_rc=$(python3 -c "import json; print(json.load(open('$_cfg')).get('no_rc', False))" 2>/dev/null)
+      if [ "$_no_rc" = "True" ]; then
+        NO_RC=true
+      fi
+      break
+    fi
+  done
+fi
 
 # Auto-detect OpenClaw if present and Claude Code is not
 if [ "$OPENCLAW_MODE" = false ] && [ "$LOCAL_MODE" = false ]; then
@@ -391,6 +407,21 @@ if changed:
   fi
 fi
 
+# --- Persist --no-rc preference to config ---
+if [ "$NO_RC" = true ] && [ -f "$INSTALL_DIR/config.json" ]; then
+  python3 -c "
+import json
+path = '$INSTALL_DIR/config.json'
+with open(path) as f:
+    cfg = json.load(f)
+if not cfg.get('no_rc', False):
+    cfg['no_rc'] = True
+    with open(path, 'w') as f:
+        json.dump(cfg, f, indent=2)
+        f.write('\n')
+" 2>/dev/null || true
+fi
+
 # --- Download sound packs via shared engine ---
 PACK_DL="$INSTALL_DIR/scripts/pack-download.sh"
 chmod +x "$PACK_DL" 2>/dev/null || true
@@ -507,8 +538,8 @@ else
   echo "Warning: trainer/ not found in local clone, skipping trainer install"
 fi
 
-# --- Add shell alias (global install only) ---
-if [ "$LOCAL_MODE" = false ]; then
+# --- Add shell alias (global install only, unless --no-rc) ---
+if [ "$LOCAL_MODE" = false ] && [ "$NO_RC" = false ]; then
   ALIAS_LINE="alias peon=\"bash $INSTALL_DIR/peon.sh\""
   for rcfile in "$HOME/.zshrc" "$HOME/.bashrc"; do
     if [ -f "$rcfile" ] && [ -w "$rcfile" ] && ! grep -qF 'alias peon=' "$rcfile"; then
@@ -532,23 +563,25 @@ if [ "$LOCAL_MODE" = false ]; then
 fi
 
 # --- Add fish shell function + completions ---
-FISH_CONFIG="$HOME/.config/fish/config.fish"
-if [ -f "$FISH_CONFIG" ] && [ -w "$FISH_CONFIG" ]; then
-  FISH_FUNC="function peon; bash $INSTALL_DIR/peon.sh \$argv; end"
-  if ! grep -qF 'function peon' "$FISH_CONFIG"; then
-    echo "" >> "$FISH_CONFIG"
-    echo "# peon-ping quick controls" >> "$FISH_CONFIG"
-    echo "$FISH_FUNC" >> "$FISH_CONFIG"
-    echo "Added peon function to config.fish"
+if [ "$NO_RC" = false ]; then
+  FISH_CONFIG="$HOME/.config/fish/config.fish"
+  if [ -f "$FISH_CONFIG" ] && [ -w "$FISH_CONFIG" ]; then
+    FISH_FUNC="function peon; bash $INSTALL_DIR/peon.sh \$argv; end"
+    if ! grep -qF 'function peon' "$FISH_CONFIG"; then
+      echo "" >> "$FISH_CONFIG"
+      echo "# peon-ping quick controls" >> "$FISH_CONFIG"
+      echo "$FISH_FUNC" >> "$FISH_CONFIG"
+      echo "Added peon function to config.fish"
+    fi
+  elif [ -f "$FISH_CONFIG" ] && [ ! -w "$FISH_CONFIG" ]; then
+    echo "Warning: config.fish is not writable, skipping fish function" >&2
   fi
-elif [ -f "$FISH_CONFIG" ] && [ ! -w "$FISH_CONFIG" ]; then
-  echo "Warning: config.fish is not writable, skipping fish function" >&2
-fi
-FISH_COMPLETIONS_DIR="$HOME/.config/fish/completions"
-if [ -d "$HOME/.config/fish" ]; then
-  mkdir -p "$FISH_COMPLETIONS_DIR"
-  cp "$INSTALL_DIR/completions.fish" "$FISH_COMPLETIONS_DIR/peon.fish"
-  echo "Installed fish completions to $FISH_COMPLETIONS_DIR/peon.fish"
+  FISH_COMPLETIONS_DIR="$HOME/.config/fish/completions"
+  if [ -d "$HOME/.config/fish" ]; then
+    mkdir -p "$FISH_COMPLETIONS_DIR"
+    cp "$INSTALL_DIR/completions.fish" "$FISH_COMPLETIONS_DIR/peon.fish"
+    echo "Installed fish completions to $FISH_COMPLETIONS_DIR/peon.fish"
+  fi
 fi
 
 # --- Verify sounds are installed ---
