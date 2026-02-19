@@ -56,7 +56,7 @@ payload = {
     'cwd': '$CWD',
     'session_id': '$SESSION_ID',
     'permission_mode': '',
-    'tool_name': input_data.get('tool_name', 'unknown'),
+    'tool_name': 'Bash',
     'error': input_data.get('stderr', 'Tool failed')
 }
 print(json.dumps(payload))
