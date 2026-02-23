@@ -2366,7 +2366,7 @@ elif event == 'Stop':
     if not silent:
         marker = '\u25cf '
         notify = '1'
-        notify_color = 'green'
+        notify_color = 'blue'
         msg = project
         msg_subtitle = ''
     else:
@@ -2380,7 +2380,7 @@ elif event == 'Notification':
         status = 'done'
         marker = '\u25cf '
         notify = '1'
-        notify_color = 'blue'
+        notify_color = 'yellow'
         msg = project
     elif ntype == 'elicitation_dialog':
         category = 'input.required'
@@ -2398,7 +2398,7 @@ elif event == 'PermissionRequest':
     status = 'needs approval'
     marker = '\u25cf '
     notify = '1'
-    notify_color = 'blue'
+    notify_color = 'red'
     msg = project
     _tool = event_data.get('tool_name', '')
     msg_subtitle = _tool
