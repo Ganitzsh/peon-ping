@@ -538,6 +538,40 @@ print('absent' if 'sub4' not in subs else 'present')
   [ "$PEON_EXIT" -eq 0 ]
 }
 
+@test "state session_names overrides project name (set via /peon-ping-rename)" {
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['notification_style'] = 'standard'
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+state = json.load(open('$TEST_DIR/.state.json'))
+state['session_names'] = {'s1': 'My Renamed Session'}
+json.dump(state, open('$TEST_DIR/.state.json', 'w'))
+"
+  run_peon '{"hook_event_name":"Stop","cwd":"/tmp/myproject","session_id":"s1","permission_mode":"default"}'
+  [ "$PEON_EXIT" -eq 0 ]
+  [ -f "$TEST_DIR/terminal_notifier.log" ]
+  grep -q "My Renamed Session" "$TEST_DIR/terminal_notifier.log"
+}
+
+@test "state session_names takes priority over CLAUDE_SESSION_NAME" {
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['notification_style'] = 'standard'
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+state = json.load(open('$TEST_DIR/.state.json'))
+state['session_names'] = {'s1': 'State Name'}
+json.dump(state, open('$TEST_DIR/.state.json', 'w'))
+"
+  CLAUDE_SESSION_NAME="Env Name" \
+    run_peon '{"hook_event_name":"Stop","cwd":"/tmp/myproject","session_id":"s1","permission_mode":"default"}'
+  [ "$PEON_EXIT" -eq 0 ]
+  [ -f "$TEST_DIR/terminal_notifier.log" ]
+  grep -q "State Name" "$TEST_DIR/terminal_notifier.log"
+  ! grep -q "Env Name" "$TEST_DIR/terminal_notifier.log"
+}
+
 @test "CLAUDE_SESSION_NAME overrides project name in notification title" {
   # Set standard notification style so title appears in terminal_notifier.log
   /usr/bin/python3 -c "

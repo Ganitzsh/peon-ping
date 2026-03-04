@@ -2879,12 +2879,18 @@ state['last_active'] = dict(session_id=session_id, pack=active_pack,
                             timestamp=time.time(), event=event, cwd=cwd)
 state_dirty = True
 
-# --- Project name (priority chain: CLAUDE_SESSION_NAME > .peon-label > notification_title_script > project_name_map > title_override > git repo > folder) ---
+# --- Project name (priority chain: session_names[id] > CLAUDE_SESSION_NAME > .peon-label > notification_title_script > project_name_map > title_override > git repo > folder) ---
 project = None
 
-# 0. CLAUDE_SESSION_NAME env var (per-terminal session override, highest priority)
-_sn = os.environ.get('CLAUDE_SESSION_NAME', '').strip()
-if _sn: project = re.sub(r'[^a-zA-Z0-9 ._-]', '', _sn[:50])
+# -1. State-based session name (set via /peon-ping-rename, highest priority)
+if session_id:
+    _sn_state = state.get('session_names', {}).get(session_id, '').strip()
+    if _sn_state: project = re.sub(r'[^a-zA-Z0-9 ._-]', '', _sn_state[:50])
+
+# 0. CLAUDE_SESSION_NAME env var (per-terminal session override)
+if not project:
+    _sn = os.environ.get('CLAUDE_SESSION_NAME', '').strip()
+    if _sn: project = re.sub(r'[^a-zA-Z0-9 ._-]', '', _sn[:50])
 
 # 1. .peon-label file in project root
 if not project and cwd:
