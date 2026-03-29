@@ -4016,6 +4016,160 @@ json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
 }
 
 # ============================================================
+# TTS speech text resolution
+# ============================================================
+
+@test "TTS: manifest speech_text present on chosen sound entry" {
+  # Enable TTS in config
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['tts'] = {'enabled': True, 'backend': 'auto', 'voice': 'default', 'rate': 1.0, 'volume': 0.5, 'mode': 'sound-then-speak'}
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
+  # Add speech_text to manifest sound entry
+  /usr/bin/python3 -c "
+import json
+m = json.load(open('$TEST_DIR/packs/peon/manifest.json'))
+m['categories']['task.complete']['sounds'] = [{'file': 'Done1.wav', 'label': 'Done', 'speech_text': 'Task complete for {project}'}]
+json.dump(m, open('$TEST_DIR/packs/peon/manifest.json', 'w'))
+"
+  run_peon '{"hook_event_name":"Stop","cwd":"/tmp/myproject","session_id":"s1"}'
+  [ "$PEON_EXIT" -eq 0 ]
+  tts_enabled=$(cat "$TEST_DIR/.tts_enabled")
+  [ "$tts_enabled" = "true" ]
+  tts_text=$(cat "$TEST_DIR/.tts_text")
+  [ "$tts_text" = "Task complete for myproject" ]
+}
+
+@test "TTS: falls back to notification template when no speech_text" {
+  # Enable TTS and notification templates
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['tts'] = {'enabled': True}
+cfg['notification_templates'] = {'stop': '{project} is done'}
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
+  run_peon '{"hook_event_name":"Stop","cwd":"/tmp/myproject","session_id":"s1"}'
+  [ "$PEON_EXIT" -eq 0 ]
+  tts_enabled=$(cat "$TEST_DIR/.tts_enabled")
+  [ "$tts_enabled" = "true" ]
+  tts_text=$(cat "$TEST_DIR/.tts_text")
+  [ "$tts_text" = "myproject is done" ]
+}
+
+@test "TTS: falls back to default template when no notification template" {
+  # Enable TTS but no notification templates
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['tts'] = {'enabled': True}
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
+  run_peon '{"hook_event_name":"Stop","cwd":"/tmp/myproject","session_id":"s1"}'
+  [ "$PEON_EXIT" -eq 0 ]
+  tts_enabled=$(cat "$TEST_DIR/.tts_enabled")
+  [ "$tts_enabled" = "true" ]
+  tts_text=$(cat "$TEST_DIR/.tts_text")
+  # Default template: "{project} — {status}" where status is "done" for Stop event
+  [[ "$tts_text" == *"myproject"* ]]
+  [[ "$tts_text" == *"done"* ]]
+}
+
+@test "TTS: empty resolved text produces empty TTS_TEXT" {
+  # Enable TTS with a template that resolves to em dash only
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['tts'] = {'enabled': True}
+cfg['notification_templates'] = {'stop': '{summary}'}
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
+  # Stop event with no transcript_summary -> summary resolves to empty
+  run_peon '{"hook_event_name":"Stop","cwd":"/tmp/myproject","session_id":"s1"}'
+  [ "$PEON_EXIT" -eq 0 ]
+  tts_text=$(cat "$TEST_DIR/.tts_text")
+  [ -z "$tts_text" ]
+}
+
+@test "TTS: disabled in config produces TTS_ENABLED=false" {
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['tts'] = {'enabled': False}
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
+  run_peon '{"hook_event_name":"Stop","cwd":"/tmp/myproject","session_id":"s1"}'
+  [ "$PEON_EXIT" -eq 0 ]
+  tts_enabled=$(cat "$TEST_DIR/.tts_enabled")
+  [ "$tts_enabled" = "false" ]
+  tts_text=$(cat "$TEST_DIR/.tts_text")
+  [ -z "$tts_text" ]
+}
+
+@test "TTS: TRAINER_TTS_TEXT populated when trainer fires and TTS enabled" {
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['tts'] = {'enabled': True}
+cfg['trainer'] = {'enabled': True, 'exercises': {'pushups': 100}, 'reminder_interval_minutes': 0, 'reminder_min_gap_minutes': 0}
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
+  # Create trainer manifest
+  mkdir -p "$TEST_DIR/trainer"
+  cat > "$TEST_DIR/trainer/manifest.json" <<'JSON'
+{
+  "trainer.session_start": [{"file": "remind.wav", "label": "Time for reps"}],
+  "trainer.remind": [{"file": "remind.wav", "label": "Time for reps"}]
+}
+JSON
+  touch "$TEST_DIR/trainer/remind.wav"
+
+  run_peon '{"hook_event_name":"SessionStart","cwd":"/tmp/myproject","session_id":"s1","permission_mode":"default"}'
+  [ "$PEON_EXIT" -eq 0 ]
+  trainer_tts=$(cat "$TEST_DIR/.trainer_tts_text")
+  [[ "$trainer_tts" == *"pushups"* ]]
+}
+
+@test "TTS: all 8 TTS variables printed in output block" {
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['tts'] = {'enabled': True, 'backend': 'espeak', 'voice': 'en-us', 'rate': 1.5, 'volume': 0.8, 'mode': 'speak-only'}
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
+  run_peon '{"hook_event_name":"Stop","cwd":"/tmp/myproject","session_id":"s1"}'
+  [ "$PEON_EXIT" -eq 0 ]
+  [ "$(cat "$TEST_DIR/.tts_enabled")" = "true" ]
+  [ -n "$(cat "$TEST_DIR/.tts_text")" ]
+  [ "$(cat "$TEST_DIR/.tts_backend")" = "espeak" ]
+  [ "$(cat "$TEST_DIR/.tts_voice")" = "en-us" ]
+  [ "$(cat "$TEST_DIR/.tts_rate")" = "1.5" ]
+  [ "$(cat "$TEST_DIR/.tts_volume")" = "0.8" ]
+  [ "$(cat "$TEST_DIR/.tts_mode")" = "speak-only" ]
+  # trainer_tts_text should be empty (no trainer configured)
+  [ -z "$(cat "$TEST_DIR/.trainer_tts_text")" ]
+}
+
+@test "TTS: paused hook produces TTS_ENABLED=false" {
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['tts'] = {'enabled': True}
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
+  # Create .paused file to simulate paused state
+  touch "$TEST_DIR/.paused"
+  run_peon '{"hook_event_name":"Stop","cwd":"/tmp/myproject","session_id":"s1"}'
+  # When paused, peon exits early — no sound, no TTS
+  # The .tts_enabled file should show false
+  tts_enabled=$(cat "$TEST_DIR/.tts_enabled" 2>/dev/null || echo "false")
+  [ "$tts_enabled" = "false" ]
+  rm -f "$TEST_DIR/.paused"
+}
+
+# ============================================================
 # packs list --registry + install (end-to-end community pack flow)
 # ============================================================
 

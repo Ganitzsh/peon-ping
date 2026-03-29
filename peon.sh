@@ -4079,20 +4079,52 @@ if event == 'Notification':
 elif event == 'PermissionRequest':
     _tpl_key = 'permission'
 _tpl = _templates.get(_tpl_key, '')
+_tpl_vars = _defaultdict(str, {
+    'project': project,
+    'summary': event_data.get('transcript_summary', '').strip()[:120],
+    'tool_name': event_data.get('tool_name', ''),
+    'status': status,
+    'event': event,
+})
 if _tpl:
-    _tpl_vars = _defaultdict(str, {
-        'project': project,
-        'summary': event_data.get('transcript_summary', '').strip()[:120],
-        'tool_name': event_data.get('tool_name', ''),
-        'status': status,
-        'event': event,
-    })
     try:
         msg = _tpl.format_map(_tpl_vars)
     except Exception:
         pass
 
 log('notify', desktop=bool(desktop_notif and notify), mobile=bool(cfg.get('mobile_notify', {}).get('service')), template=_tpl or '', rendered=msg)
+
+# --- TTS speech text resolution ---
+tts_cfg = cfg.get('tts', {})
+tts_enabled = tts_cfg.get('enabled', False) and not paused
+tts_text = ''
+tts_backend = tts_cfg.get('backend', 'auto')
+tts_voice = tts_cfg.get('voice', 'default')
+tts_rate = tts_cfg.get('rate', 1.0)
+tts_volume = tts_cfg.get('volume', 0.5)
+tts_mode = tts_cfg.get('mode', 'sound-then-speak')
+
+if tts_enabled and category:
+    # Chain: manifest speech_text -> notification template -> default
+    if pick and pick.get('speech_text'):
+        _speech_tpl = pick['speech_text']
+    elif _tpl:
+        _speech_tpl = _tpl  # already resolved notification template
+    else:
+        _speech_tpl = '{project} \u2014 {status}'
+
+    try:
+        tts_text = _speech_tpl.format_map(_tpl_vars)
+    except Exception:
+        tts_text = ''
+
+    # Empty after interpolation -> skip
+    tts_text = tts_text.strip()
+    if tts_text == '\u2014' or not tts_text:
+        tts_text = ''
+
+# After trainer reminder logic (which already computes trainer_msg):
+trainer_tts_text = trainer_msg if (tts_enabled and trainer_msg) else ''
 
 # --- Log exit ---
 _duration_ms = int((time.monotonic() - _peon_start) * 1000)
@@ -4145,6 +4177,14 @@ print('SOUND_FILE=' + q(sound_file))
 print('ICON_PATH=' + q(icon_path))
 print('TRAINER_SOUND=' + q(trainer_sound))
 print('TRAINER_MSG=' + q(trainer_msg))
+print('TTS_ENABLED=' + ('true' if tts_enabled else 'false'))
+print('TTS_TEXT=' + q(tts_text))
+print('TTS_BACKEND=' + q(tts_backend))
+print('TTS_VOICE=' + q(tts_voice))
+print('TTS_RATE=' + q(str(tts_rate)))
+print('TTS_VOLUME=' + q(str(tts_volume)))
+print('TTS_MODE=' + q(tts_mode))
+print('TRAINER_TTS_TEXT=' + q(trainer_tts_text))
 print('TAB_COLOR_RGB=' + q(tab_color_rgb))
 # Auto-prune: emit retention days so bash can prune without spawning another python3
 _auto_debug = cfg.get('debug', False) or os.environ.get('PEON_DEBUG') == '1'
@@ -4356,6 +4396,14 @@ fi
 # In test mode, write resolved color to file for BATS verification.
 [ "${PEON_TEST:-0}" = "1" ] && [ -n "$TAB_COLOR_RGB" ] && echo "$TAB_COLOR_RGB" > "$PEON_DIR/.tab_color_rgb"
 [ "${PEON_TEST:-0}" = "1" ] && [ -n "$ICON_PATH" ] && echo "$ICON_PATH" > "$PEON_DIR/.icon_path"
+[ "${PEON_TEST:-0}" = "1" ] && echo "${TTS_ENABLED:-false}" > "$PEON_DIR/.tts_enabled"
+[ "${PEON_TEST:-0}" = "1" ] && echo "${TTS_TEXT:-}" > "$PEON_DIR/.tts_text"
+[ "${PEON_TEST:-0}" = "1" ] && echo "${TTS_BACKEND:-}" > "$PEON_DIR/.tts_backend"
+[ "${PEON_TEST:-0}" = "1" ] && echo "${TTS_VOICE:-}" > "$PEON_DIR/.tts_voice"
+[ "${PEON_TEST:-0}" = "1" ] && echo "${TTS_RATE:-}" > "$PEON_DIR/.tts_rate"
+[ "${PEON_TEST:-0}" = "1" ] && echo "${TTS_VOLUME:-}" > "$PEON_DIR/.tts_volume"
+[ "${PEON_TEST:-0}" = "1" ] && echo "${TTS_MODE:-}" > "$PEON_DIR/.tts_mode"
+[ "${PEON_TEST:-0}" = "1" ] && echo "${TRAINER_TTS_TEXT:-}" > "$PEON_DIR/.trainer_tts_text"
 if [ -n "$TAB_COLOR_RGB" ] && { [[ "${TERM_PROGRAM:-}" == "iTerm.app" ]] || [ -n "${ITERM_SESSION_ID:-}" ]; }; then
   read -r _R _G _B <<< "$TAB_COLOR_RGB"
   _peon_esc "$(printf '\033]6;1;bg;red;brightness;%d\a' "$_R")"

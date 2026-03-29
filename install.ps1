@@ -2365,6 +2365,72 @@ if ($notify) {
     }
 }
 
+# --- TTS speech text resolution ---
+$ttsCfg = if ($config.tts) { $config.tts } else { @{} }
+$ttsEnabled = ($ttsCfg.enabled -eq $true)
+$ttsText = ""
+$ttsBackend = if ($ttsCfg.backend) { $ttsCfg.backend } else { "auto" }
+$ttsVoice = if ($ttsCfg.voice) { $ttsCfg.voice } else { "default" }
+$ttsRate = if ($ttsCfg.rate) { $ttsCfg.rate } else { 1.0 }
+$ttsVolume = if ($ttsCfg.volume) { $ttsCfg.volume } else { 0.5 }
+$ttsMode = if ($ttsCfg.mode) { $ttsCfg.mode } else { "sound-then-speak" }
+
+if ($ttsEnabled -and $category) {
+    $speechTpl = ""
+    if ($chosen -and $chosen.speech_text) {
+        $speechTpl = $chosen.speech_text
+    } elseif ($config.notification_templates) {
+        # Check for notification template (same key resolution as notification templates)
+        $ttsKeyMap = @{ "task.complete" = "stop"; "task.error" = "error" }
+        $ttsTplKey = $ttsKeyMap[$category]
+        if ($hookEvent -eq "Notification") {
+            if ($ntype -eq "idle_prompt") { $ttsTplKey = "idle" }
+            elseif ($ntype -eq "elicitation_dialog") { $ttsTplKey = "question" }
+        } elseif ($hookEvent -eq "PermissionRequest") {
+            $ttsTplKey = "permission"
+        }
+        if ($ttsTplKey -and $config.notification_templates.$ttsTplKey) {
+            $speechTpl = $config.notification_templates.$ttsTplKey
+        }
+    }
+    if (-not $speechTpl) {
+        $speechTpl = "{project} `u{2014} {status}"
+    }
+
+    # Interpolate template variables (same set as notification templates)
+    $ttsVars = @{
+        project   = $project
+        summary   = if ($event.transcript_summary) { [string]$event.transcript_summary } else { '' }
+        tool_name = if ($event.tool_name) { [string]$event.tool_name } else { '' }
+        status    = $notifyStatus
+        event     = $hookEvent
+    }
+    $ttsText = $speechTpl
+    foreach ($key in $ttsVars.Keys) {
+        $ttsText = $ttsText.Replace("{$key}", $ttsVars[$key])
+    }
+    $ttsText = $ttsText.Trim()
+    if ($ttsText -eq "`u{2014}" -or -not $ttsText) { $ttsText = "" }
+}
+
+# TRAINER_TTS_TEXT: trainer progress string when TTS enabled
+$trainerTtsText = if ($ttsEnabled -and $trainerMsg) { $trainerMsg } else { "" }
+
+# --- TTS test output (write variables for Pester verification) ---
+if ($env:PEON_TEST -eq "1") {
+    $ttsLogPath = Join-Path $InstallDir ".tts-vars.json"
+    @{
+        TTS_ENABLED      = $ttsEnabled
+        TTS_TEXT         = $ttsText
+        TTS_BACKEND      = $ttsBackend
+        TTS_VOICE        = $ttsVoice
+        TTS_RATE         = $ttsRate
+        TTS_VOLUME       = $ttsVolume
+        TTS_MODE         = $ttsMode
+        TRAINER_TTS_TEXT = $trainerTtsText
+    } | ConvertTo-Json | Set-Content -Path $ttsLogPath -Encoding UTF8
+}
+
 # --- Desktop notification dispatch ---
 $desktopNotif = $config.desktop_notifications
 if ($null -eq $desktopNotif) { $desktopNotif = $true }
