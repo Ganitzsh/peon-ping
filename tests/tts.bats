@@ -16,7 +16,7 @@ teardown() {
 # ============================================================
 
 @test "TTS: speak() invokes backend with correct arg order (voice, rate, volume)" {
-  run_peon_tts '{"hook_event_name":"TaskComplete","cwd":"/tmp/proj","session_id":"s1"}' "Hello world"
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "Hello world"
   [ "$PEON_EXIT" -eq 0 ]
   tts_was_called
   local call
@@ -27,7 +27,7 @@ teardown() {
 }
 
 @test "TTS: speak() passes text on stdin to backend" {
-  run_peon_tts '{"hook_event_name":"TaskComplete","cwd":"/tmp/proj","session_id":"s1"}' "Task completed successfully"
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "Task completed successfully"
   [ "$PEON_EXIT" -eq 0 ]
   tts_was_called
   local call
@@ -40,21 +40,21 @@ teardown() {
 # ============================================================
 
 @test "TTS: sound-then-speak mode plays sound before TTS" {
-  run_peon_tts '{"hook_event_name":"TaskComplete","cwd":"/tmp/proj","session_id":"s1"}' "Done" "sound-then-speak"
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "Done" "sound-then-speak"
   [ "$PEON_EXIT" -eq 0 ]
   afplay_was_called
   tts_was_called
 }
 
 @test "TTS: speak-only mode skips play_sound entirely" {
-  run_peon_tts '{"hook_event_name":"TaskComplete","cwd":"/tmp/proj","session_id":"s1"}' "Done" "speak-only"
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "Done" "speak-only"
   [ "$PEON_EXIT" -eq 0 ]
   ! afplay_was_called
   tts_was_called
 }
 
 @test "TTS: speak-then-sound mode invokes TTS then sound" {
-  run_peon_tts '{"hook_event_name":"TaskComplete","cwd":"/tmp/proj","session_id":"s1"}' "Done" "speak-then-sound"
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "Done" "speak-then-sound"
   [ "$PEON_EXIT" -eq 0 ]
   afplay_was_called
   tts_was_called
@@ -64,22 +64,23 @@ teardown() {
 # TTS suppression
 # ============================================================
 
-@test "TTS: empty TTS_TEXT skips TTS invocation" {
-  run_peon_tts '{"hook_event_name":"TaskComplete","cwd":"/tmp/proj","session_id":"s1"}' "" "sound-then-speak"
+@test "TTS: empty speech_text skips TTS invocation" {
+  # Use em-dash as speech_text — the Python block treats bare "—" as empty
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "—" "sound-then-speak"
   [ "$PEON_EXIT" -eq 0 ]
   afplay_was_called
   ! tts_was_called
 }
 
 @test "TTS: TTS_ENABLED=false skips TTS invocation" {
-  run_peon_tts '{"hook_event_name":"TaskComplete","cwd":"/tmp/proj","session_id":"s1"}' "Hello" "sound-then-speak" "false"
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "Hello" "sound-then-speak" "false"
   [ "$PEON_EXIT" -eq 0 ]
   afplay_was_called
   ! tts_was_called
 }
 
 @test "TTS: headphones_only suppresses TTS when no headphones" {
-  # Set headphones_only and speakers-only fixture
+  # Set headphones_only in config (run_peon_tts writes TTS section separately)
   /usr/bin/python3 -c "
 import json
 cfg = json.load(open('$TEST_DIR/config.json'))
@@ -87,7 +88,7 @@ cfg['headphones_only'] = True
 json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
 "
   touch "$TEST_DIR/.mock_speakers_only"
-  run_peon_tts '{"hook_event_name":"TaskComplete","cwd":"/tmp/proj","session_id":"s1"}' "Hello" "sound-then-speak"
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "Hello" "sound-then-speak"
   [ "$PEON_EXIT" -eq 0 ]
   ! afplay_was_called
   ! tts_was_called
@@ -106,7 +107,22 @@ json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
 echo "zoom"
 SCRIPT
   chmod +x "$MOCK_BIN/lsof"
-  run_peon_tts '{"hook_event_name":"TaskComplete","cwd":"/tmp/proj","session_id":"s1"}' "Hello" "sound-then-speak"
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "Hello" "sound-then-speak"
+  [ "$PEON_EXIT" -eq 0 ]
+  ! afplay_was_called
+  ! tts_was_called
+}
+
+@test "TTS: suppress_sound_when_tab_focused suppresses TTS when terminal is focused" {
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['suppress_sound_when_tab_focused'] = True
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
+  # Mock terminal as focused (Terminal.app — a recognized terminal)
+  echo "Terminal" > "$TEST_DIR/.mock_terminal_focused"
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "Hello" "sound-then-speak"
   [ "$PEON_EXIT" -eq 0 ]
   ! afplay_was_called
   ! tts_was_called
@@ -119,7 +135,7 @@ SCRIPT
 @test "TTS: kill_previous_tts kills old .tts.pid before new speak" {
   # Plant a fake .tts.pid — it should be cleaned up
   echo "99999" > "$TEST_DIR/.tts.pid"
-  run_peon_tts '{"hook_event_name":"TaskComplete","cwd":"/tmp/proj","session_id":"s1"}' "Hello"
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "Hello"
   [ "$PEON_EXIT" -eq 0 ]
   tts_was_called
   # Old PID file should have been removed (or replaced)
@@ -137,7 +153,7 @@ SCRIPT
 @test "TTS: missing backend script causes graceful skip, sound still plays" {
   # Remove the mock backend
   rm -f "$TEST_DIR/scripts/tts-native.sh"
-  run_peon_tts '{"hook_event_name":"TaskComplete","cwd":"/tmp/proj","session_id":"s1"}' "Hello" "sound-then-speak"
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "Hello" "sound-then-speak"
   [ "$PEON_EXIT" -eq 0 ]
   afplay_was_called
   ! tts_was_called
@@ -145,8 +161,25 @@ SCRIPT
 
 @test "TTS: auto backend resolution with no scripts installed returns gracefully" {
   rm -f "$TEST_DIR/scripts/tts-native.sh"
-  export TTS_BACKEND="auto"
-  run_peon_tts '{"hook_event_name":"TaskComplete","cwd":"/tmp/proj","session_id":"s1"}' "Hello" "sound-then-speak"
+  # Write TTS config with backend=auto directly (no run_peon_tts indirection)
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['tts'] = {'enabled': True, 'backend': 'auto', 'voice': 'default', 'rate': 1.0, 'volume': 0.5, 'mode': 'sound-then-speak'}
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
+  # Add speech_text to manifest so Python resolves TTS_TEXT
+  /usr/bin/python3 -c "
+import json
+m = json.load(open('$TEST_DIR/packs/peon/manifest.json'))
+for cat in m.get('categories', {}).values():
+    for entry in cat.get('sounds', []):
+        entry['speech_text'] = 'Hello'
+json.dump(m, open('$TEST_DIR/packs/peon/manifest.json', 'w'))
+"
+  export PEON_TEST=1
+  echo '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' | bash "$PEON_SH" 2>"$TEST_DIR/stderr.log"
+  PEON_EXIT=$?
   [ "$PEON_EXIT" -eq 0 ]
   afplay_was_called
   ! tts_was_called
@@ -172,15 +205,13 @@ JSON
   touch "$TEST_DIR/trainer/sounds/remind/reminder.mp3"
 
   # Set trainer state: last reminder was long ago so it fires
-  python3 -c "
+  /usr/bin/python3 -c "
 import json, time
 s = json.load(open('$TEST_DIR/.state.json'))
 s['trainer'] = {'date': '$(date +%Y-%m-%d)', 'reps': {'pushups': 0, 'squats': 0}, 'last_reminder_ts': int(time.time()) - 3600}
 json.dump(s, open('$TEST_DIR/.state.json', 'w'))
 "
 
-  # TRAINER_TTS_TEXT is exported (Step 2 Python block will set this; for now env survives eval)
-  export TRAINER_TTS_TEXT="Time for pushups"
   run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "Task done"
   [ "$PEON_EXIT" -eq 0 ]
   tts_was_called
@@ -188,10 +219,10 @@ json.dump(s, open('$TEST_DIR/.state.json', 'w'))
   local count
   count=$(tts_call_count)
   [ "$count" -eq 2 ]
-  # Last TTS call should be the trainer text
+  # Last TTS call should contain trainer exercise progress (computed by Python block)
   local last
   last=$(tts_last_call)
-  [[ "$last" == *"text=Time for pushups"* ]]
+  [[ "$last" == *"pushups"* ]]
 }
 
 # ============================================================
@@ -199,7 +230,7 @@ json.dump(s, open('$TEST_DIR/.state.json', 'w'))
 # ============================================================
 
 @test "TTS: integration — full hook with TTS enabled fires both sound and TTS" {
-  run_peon_tts '{"hook_event_name":"TaskComplete","cwd":"/tmp/proj","session_id":"s1"}' "Build succeeded"
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "Build succeeded"
   [ "$PEON_EXIT" -eq 0 ]
   afplay_was_called
   tts_was_called
@@ -214,7 +245,7 @@ json.dump(s, open('$TEST_DIR/.state.json', 'w'))
 # ============================================================
 
 @test "TTS: text with shell metacharacters delivered safely via stdin" {
-  run_peon_tts '{"hook_event_name":"TaskComplete","cwd":"/tmp/proj","session_id":"s1"}' 'Hello $USER `whoami` $(date)'
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' 'Hello $USER `whoami` $(date)'
   [ "$PEON_EXIT" -eq 0 ]
   tts_was_called
   local call

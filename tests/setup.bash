@@ -414,21 +414,45 @@ tts_last_call() {
   fi
 }
 
-# Helper: run peon.sh with TTS variables pre-set via environment
-# Usage: run_peon_tts <json> [TTS_TEXT] [TTS_MODE] [TTS_ENABLED]
+# Helper: run peon.sh with TTS config written to config.json
+# Usage: run_peon_tts <json> [speech_text] [TTS_MODE] [TTS_ENABLED]
+# speech_text is injected into the manifest's task.complete entries so the
+# Python block resolves it as TTS_TEXT.  Pass "" to test empty-text skip.
 run_peon_tts() {
   local json="$1"
-  local tts_text="${2:-Hello world}"
+  local speech_text="${2:-Hello world}"
   local tts_mode="${3:-sound-then-speak}"
   local tts_enabled="${4:-true}"
+
+  # Write TTS section into config.json so the Python block picks it up
+  /usr/bin/python3 -c "
+import json, sys
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['tts'] = {
+  'enabled': $( [ "$tts_enabled" = "true" ] && echo "True" || echo "False" ),
+  'backend': 'native',
+  'voice': 'default',
+  'rate': 1.0,
+  'volume': 0.5,
+  'mode': '$tts_mode'
+}
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
+
+  # Inject speech_text into manifest sound entries so the Python TTS
+  # resolution chain finds it.  An empty string means no speech_text field.
+  if [ -n "$speech_text" ]; then
+    /usr/bin/python3 -c "
+import json
+m = json.load(open('$TEST_DIR/packs/peon/manifest.json'))
+for cat in m.get('categories', {}).values():
+    for entry in cat.get('sounds', []):
+        entry['speech_text'] = $(printf '%s' "$speech_text" | /usr/bin/python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+json.dump(m, open('$TEST_DIR/packs/peon/manifest.json', 'w'))
+"
+  fi
+
   export PEON_TEST=1
-  export TTS_TEXT="$tts_text"
-  export TTS_MODE="$tts_mode"
-  export TTS_ENABLED="$tts_enabled"
-  export TTS_BACKEND="native"
-  export TTS_VOICE="default"
-  export TTS_RATE="1.0"
-  export TTS_VOLUME="0.5"
   echo "$json" | bash "$PEON_SH" 2>"$TEST_DIR/stderr.log"
   PEON_EXIT=$?
   PEON_STDERR=$(cat "$TEST_DIR/stderr.log" 2>/dev/null)
