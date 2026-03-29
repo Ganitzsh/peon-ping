@@ -504,6 +504,30 @@ function Read-StateWithRetry {
     return @{}
 }
 
+function Resolve-TemplateKey {
+    param(
+        [string]$Category,
+        [string]$Event,
+        [string]$Ntype
+    )
+
+    # Category-to-key mapping (matches peon.sh template resolution)
+    # Shared by notification templates and TTS text resolution.
+    $keyMap = @{
+        "task.complete" = "stop"
+        "task.error"    = "error"
+    }
+    $tplKey = $keyMap[$Category]
+    if ($Event -eq "Notification") {
+        if ($Ntype -eq "idle_prompt") { $tplKey = "idle" }
+        elseif ($Ntype -eq "elicitation_dialog") { $tplKey = "question" }
+    } elseif ($Event -eq "PermissionRequest") {
+        $tplKey = "permission"
+    }
+
+    return $tplKey
+}
+
 function Resolve-NotificationTemplate {
     param(
         [object]$Templates,
@@ -517,18 +541,7 @@ function Resolve-NotificationTemplate {
         [string]$DefaultMsg
     )
 
-    # Category-to-key mapping (matches peon.sh template resolution)
-    $keyMap = @{
-        "task.complete" = "stop"
-        "task.error"    = "error"
-    }
-    $tplKey = $keyMap[$Category]
-    if ($Event -eq "Notification") {
-        if ($Ntype -eq "idle_prompt") { $tplKey = "idle" }
-        elseif ($Ntype -eq "elicitation_dialog") { $tplKey = "question" }
-    } elseif ($Event -eq "PermissionRequest") {
-        $tplKey = "permission"
-    }
+    $tplKey = Resolve-TemplateKey -Category $Category -Event $Event -Ntype $Ntype
 
     if (-not $tplKey -or -not $Templates.$tplKey) {
         return $DefaultMsg
