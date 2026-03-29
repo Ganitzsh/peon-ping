@@ -3430,6 +3430,102 @@ PYTHON
 }
 
 # ============================================================
+# peon update config backfill: tts section
+# ============================================================
+
+@test "peon update backfills tts section on config that lacks it" {
+  # Write a config WITHOUT tts (simulates pre-TTS install)
+  cat > "$TEST_DIR/config.json" <<'JSON'
+{
+  "default_pack": "peon",
+  "volume": 0.5,
+  "enabled": true,
+  "pack_rotation_mode": "random"
+}
+JSON
+
+  # Run the same shallow-merge logic that install.sh uses for backfill
+  python3 <<PYTHON
+import json
+defaults = json.load(open('${BATS_TEST_DIRNAME}/../config.json'))
+user_cfg = json.load(open('${TEST_DIR}/config.json'))
+changed = False
+for key, value in defaults.items():
+    if key not in user_cfg:
+        user_cfg[key] = value
+        changed = True
+if changed:
+    with open('${TEST_DIR}/config.json', 'w') as f:
+        json.dump(user_cfg, f, indent=2)
+        f.write('\n')
+PYTHON
+
+  # Verify tts section was added with correct defaults
+  python3 <<'PYTHON'
+import json, os
+cfg = json.load(open(os.environ['TEST_DIR'] + '/config.json'))
+tts = cfg.get('tts')
+assert tts is not None, "tts section should exist"
+assert tts['enabled'] == False, "tts.enabled should be false"
+assert tts['backend'] == 'auto', "tts.backend should be auto"
+assert tts['voice'] == 'default', "tts.voice should be default"
+assert tts['rate'] == 1.0, "tts.rate should be 1.0"
+assert tts['volume'] == 0.5, "tts.volume should be 0.5"
+assert tts['mode'] == 'sound-then-speak', "tts.mode should be sound-then-speak"
+PYTHON
+}
+
+@test "peon update preserves existing tts values when section already present" {
+  # Write a config WITH custom tts values
+  cat > "$TEST_DIR/config.json" <<'JSON'
+{
+  "default_pack": "peon",
+  "volume": 0.5,
+  "enabled": true,
+  "pack_rotation_mode": "random",
+  "tts": {
+    "enabled": true,
+    "backend": "say",
+    "voice": "Samantha",
+    "rate": 1.5,
+    "volume": 0.8,
+    "mode": "speak-only"
+  }
+}
+JSON
+
+  # Run the same shallow-merge backfill logic
+  python3 <<PYTHON
+import json
+defaults = json.load(open('${BATS_TEST_DIRNAME}/../config.json'))
+user_cfg = json.load(open('${TEST_DIR}/config.json'))
+changed = False
+for key, value in defaults.items():
+    if key not in user_cfg:
+        user_cfg[key] = value
+        changed = True
+if changed:
+    with open('${TEST_DIR}/config.json', 'w') as f:
+        json.dump(user_cfg, f, indent=2)
+        f.write('\n')
+PYTHON
+
+  # Verify user's tts values were NOT overwritten
+  python3 <<'PYTHON'
+import json, os
+cfg = json.load(open(os.environ['TEST_DIR'] + '/config.json'))
+tts = cfg.get('tts')
+assert tts is not None, "tts section should exist"
+assert tts['enabled'] == True, "tts.enabled should remain true"
+assert tts['backend'] == 'say', "tts.backend should remain say"
+assert tts['voice'] == 'Samantha', "tts.voice should remain Samantha"
+assert tts['rate'] == 1.5, "tts.rate should remain 1.5"
+assert tts['volume'] == 0.8, "tts.volume should remain 0.8"
+assert tts['mode'] == 'speak-only', "tts.mode should remain speak-only"
+PYTHON
+}
+
+# ============================================================
 # packs install-local
 # ============================================================
 

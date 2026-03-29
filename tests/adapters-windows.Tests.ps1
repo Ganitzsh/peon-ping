@@ -1464,6 +1464,15 @@ Describe "install.ps1 Default Config" {
         $script:installContent | Should -Match 'silent_window_seconds = 0'
     }
 
+    It "includes tts section with correct defaults" {
+        $script:installContent | Should -Match 'tts = @\{'
+        $script:installContent | Should -Match 'enabled = \$false'
+        $script:installContent | Should -Match 'backend = "auto"'
+        $script:installContent | Should -Match 'voice = "default"'
+        $script:installContent | Should -Match 'rate = 1\.0'
+        $script:installContent | Should -Match 'mode = "sound-then-speak"'
+    }
+
     It "registers all 8 hook events" {
         $script:installContent | Should -Match '"SessionStart".*"SessionEnd".*"SubagentStart".*"Stop".*"Notification".*"PermissionRequest".*"PostToolUseFailure".*"PreCompact"'
     }

@@ -224,6 +224,14 @@ if (-not $Updating) {
         silent_window_seconds = 0
         pack_rotation = @()
         pack_rotation_mode = "random"
+        tts = @{
+            enabled = $false
+            backend = "auto"
+            voice = "default"
+            rate = 1.0
+            volume = 0.5
+            mode = "sound-then-speak"
+        }
     }
     Set-PeonConfig $config $configPath
 }
