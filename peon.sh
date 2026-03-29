@@ -381,6 +381,80 @@ save_sound_pid() {
 # (e.g., via `peon preview` or `peon play` CLI commands).
 _peon_log() { :; }
 
+# --- Kill any previously running TTS process ---
+kill_previous_tts() {
+  local pidfile="$PEON_DIR/.tts.pid"
+  if [ -f "$pidfile" ]; then
+    local old_pid
+    old_pid=$(cat "$pidfile" 2>/dev/null)
+    if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+      kill "$old_pid" 2>/dev/null
+    fi
+    rm -f "$pidfile"
+  fi
+}
+
+save_tts_pid() {
+  echo "$1" > "$PEON_DIR/.tts.pid"
+}
+
+# --- TTS backend resolution ---
+# Maps config values to script filenames. The caller (speak()) resolves
+# to an absolute path via find_bundled_script.
+_resolve_tts_backend() {
+  local backend="${1:-auto}"
+  case "$backend" in
+    native)     echo "tts-native.sh" ;;
+    elevenlabs) echo "tts-elevenlabs.sh" ;;
+    piper)      echo "tts-piper.sh" ;;
+    auto)
+      # Probe in priority order: prefer premium when installed.
+      local b script_name
+      for b in elevenlabs piper native; do
+        script_name="$(_resolve_tts_backend "$b")" || continue
+        find_bundled_script "$script_name" >/dev/null 2>&1 || continue
+        echo "$script_name" && return 0
+      done
+      return 1  # no backend available
+      ;;
+    *) return 1 ;;
+  esac
+}
+
+# --- TTS speech function ---
+# Invokes the resolved TTS backend with text on stdin.
+# Args: text
+# Reads TTS_BACKEND, TTS_VOICE, TTS_RATE, TTS_VOLUME from environment.
+speak() {
+  local text="$1"
+  [ -z "$text" ] && return 0
+
+  kill_previous_tts
+
+  # _resolve_tts_backend returns a script filename (e.g., "tts-native.sh").
+  # find_bundled_script resolves it to an absolute path.
+  local script_name
+  script_name="$(_resolve_tts_backend "${TTS_BACKEND:-auto}")" || return 0
+  local abs_script
+  abs_script="$(find_bundled_script "$script_name")" 2>/dev/null || return 0
+  [ -x "$abs_script" ] || return 0
+
+  local voice="${TTS_VOICE:-default}"
+  local rate="${TTS_RATE:-1.0}"
+  local vol="${TTS_VOLUME:-0.5}"
+
+  if [ "${PEON_TEST:-0}" = "1" ]; then
+    printf '%s\n' "$text" | "$abs_script" "$voice" "$rate" "$vol" >/dev/null 2>&1
+  else
+    # printf '%s\n' is used instead of echo to avoid flag interpretation
+    # (e.g., text starting with "-n" or "-e"). Text is passed as $0 to sh -c,
+    # avoiding shell interpolation of metacharacters in the text content.
+    nohup sh -c 'printf "%s\n" "$0" | "$1" "$2" "$3" "$4"' \
+      "$text" "$abs_script" "$voice" "$rate" "$vol" >/dev/null 2>&1 &
+    save_tts_pid $!
+  fi
+}
+
 # SSH audio routing mode.
 # relay (default): current behavior, require relay endpoint.
 # auto: try relay first, fallback to local host playback.
@@ -4414,23 +4488,48 @@ fi
 _run_sound_and_notify() {
   local _focused=""  # lazy: empty = not yet checked
 
-  # --- Play sound ---
-  if [ -n "$SOUND_FILE" ] && [ -f "$SOUND_FILE" ]; then
-    local _skip_sound=false
-    # Check headphones_only: skip sound if enabled but no headphones detected
-    if [ "${HEADPHONES_ONLY:-false}" = "true" ] && [ "${HEADPHONES_DETECTED:-true}" = "false" ]; then
-      _skip_sound=true
+  # --- Shared suppression checks (apply to both sound and TTS) ---
+  local _skip_sound=false
+  # Check headphones_only: skip sound if enabled but no headphones detected
+  if [ "${HEADPHONES_ONLY:-false}" = "true" ] && [ "${HEADPHONES_DETECTED:-true}" = "false" ]; then
+    _skip_sound=true
+  fi
+  # Check meeting_detect: skip sound if in a meeting
+  if [ "$_skip_sound" = "false" ] && [ "${MEETING_DETECT:-false}" = "true" ] && [ "${IN_MEETING:-false}" = "true" ]; then
+    _skip_sound=true
+  fi
+  # Check suppress_sound_when_tab_focused: skip sound if tab is focused
+  if [ "$_skip_sound" = "false" ] && [ "${SUPPRESS_SOUND_WHEN_TAB_FOCUSED:-false}" = "true" ]; then
+    [ -z "$_focused" ] && { terminal_is_focused && _focused=true || _focused=false; }
+    [ "$_focused" = "true" ] && _skip_sound=true
+  fi
+
+  # --- Play sound and/or TTS based on mode ---
+  if [ "$_skip_sound" = "false" ]; then
+    # Determine if TTS should fire
+    local _do_tts=false
+    if [ "${TTS_ENABLED:-false}" = "true" ] && [ -n "${TTS_TEXT:-}" ]; then
+      _do_tts=true
     fi
-    # Check meeting_detect: skip sound if in a meeting
-    if [ "$_skip_sound" = "false" ] && [ "${MEETING_DETECT:-false}" = "true" ] && [ "${IN_MEETING:-false}" = "true" ]; then
-      _skip_sound=true
-    fi
-    # Check suppress_sound_when_tab_focused: skip sound if tab is focused
-    if [ "$_skip_sound" = "false" ] && [ "${SUPPRESS_SOUND_WHEN_TAB_FOCUSED:-false}" = "true" ]; then
-      [ -z "$_focused" ] && { terminal_is_focused && _focused=true || _focused=false; }
-      [ "$_focused" = "true" ] && _skip_sound=true
-    fi
-    [ "$_skip_sound" = "false" ] && play_sound "$SOUND_FILE" "$VOLUME"
+
+    case "${TTS_MODE:-sound-then-speak}" in
+      sound-then-speak)
+        [ -n "$SOUND_FILE" ] && [ -f "$SOUND_FILE" ] && play_sound "$SOUND_FILE" "$VOLUME"
+        [ "$_do_tts" = "true" ] && speak "$TTS_TEXT"
+        ;;
+      speak-only)
+        [ "$_do_tts" = "true" ] && speak "$TTS_TEXT"
+        ;;
+      speak-then-sound)
+        [ "$_do_tts" = "true" ] && speak "$TTS_TEXT"
+        [ -n "$SOUND_FILE" ] && [ -f "$SOUND_FILE" ] && play_sound "$SOUND_FILE" "$VOLUME"
+        ;;
+      *)
+        # Unknown mode — fall back to sound-then-speak
+        [ -n "$SOUND_FILE" ] && [ -f "$SOUND_FILE" ] && play_sound "$SOUND_FILE" "$VOLUME"
+        [ "$_do_tts" = "true" ] && speak "$TTS_TEXT"
+        ;;
+    esac
   fi
 
   # --- Smart notification: only when terminal is NOT frontmost ---
@@ -4456,6 +4555,10 @@ fi
 if [ -n "${TRAINER_SOUND:-}" ] && [ -f "$TRAINER_SOUND" ]; then
   if [ "${PEON_TEST:-0}" = "1" ]; then
     play_sound "$TRAINER_SOUND" "$VOLUME"
+    # Speak trainer TTS text after trainer sound when TTS enabled
+    if [ "${TTS_ENABLED:-false}" = "true" ] && [ -n "${TRAINER_TTS_TEXT:-}" ]; then
+      speak "$TRAINER_TTS_TEXT"
+    fi
   else
     (
       # Wait for the main pack sound to finish before playing trainer sound
@@ -4471,7 +4574,19 @@ if [ -n "${TRAINER_SOUND:-}" ] && [ -f "$TRAINER_SOUND" ]; then
           done
         fi
       fi
-      # Brief pause after main sound ends for natural spacing
+      # Wait for main TTS to finish too (prevents overlap in sound-then-speak mode)
+      _tts_pidfile="$PEON_DIR/.tts.pid"
+      if [ -f "$_tts_pidfile" ]; then
+        _tts_pid=$(cat "$_tts_pidfile" 2>/dev/null)
+        if [ -n "$_tts_pid" ] && kill -0 "$_tts_pid" 2>/dev/null; then
+          _waited=0
+          while kill -0 "$_tts_pid" 2>/dev/null && [ "$_waited" -lt 100 ]; do
+            sleep 0.1
+            _waited=$((_waited + 1))
+          done
+        fi
+      fi
+      # Brief pause after main sound/TTS ends for natural spacing
       sleep 0.5
       local _trainer_focused=""
       if [ "${SUPPRESS_SOUND_WHEN_TAB_FOCUSED:-false}" = "true" ]; then
@@ -4479,6 +4594,10 @@ if [ -n "${TRAINER_SOUND:-}" ] && [ -f "$TRAINER_SOUND" ]; then
         [ "$_trainer_focused" != "true" ] && play_sound "$TRAINER_SOUND" "$VOLUME"
       else
         play_sound "$TRAINER_SOUND" "$VOLUME"
+      fi
+      # Speak trainer TTS text after trainer sound when TTS enabled
+      if [ "${TTS_ENABLED:-false}" = "true" ] && [ -n "${TRAINER_TTS_TEXT:-}" ]; then
+        speak "$TRAINER_TTS_TEXT"
       fi
       if [ -n "$NOTIFY" ] && [ "$PAUSED" != "true" ] && [ "${DESKTOP_NOTIF:-true}" = "true" ]; then
         [ -z "$_trainer_focused" ] && { terminal_is_focused && _trainer_focused=true || _trainer_focused=false; }
