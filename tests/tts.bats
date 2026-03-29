@@ -173,6 +173,28 @@ json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
   ! tts_was_called
 }
 
+# ============================================================
+# Speak-only debug log emission (PEON_DEBUG gated)
+# ============================================================
+
+@test "TTS: speak-only with TTS unavailable emits debug log when PEON_DEBUG=1" {
+  export PEON_DEBUG=1
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "Done" "speak-only" "false"
+  [ "$PEON_EXIT" -eq 0 ]
+  ! afplay_was_called
+  ! tts_was_called
+  [[ "$PEON_STDERR" == *"[tts] speak-only mode but TTS unavailable"* ]]
+}
+
+@test "TTS: speak-only with TTS unavailable does NOT emit debug log when PEON_DEBUG unset" {
+  unset PEON_DEBUG
+  run_peon_tts '{"hook_event_name":"Stop","cwd":"/tmp/proj","session_id":"s1","permission_mode":"default"}' "Done" "speak-only" "false"
+  [ "$PEON_EXIT" -eq 0 ]
+  ! afplay_was_called
+  ! tts_was_called
+  [[ "$PEON_STDERR" != *"[tts] speak-only mode but TTS unavailable"* ]]
+}
+
 @test "TTS: auto backend resolution with no scripts installed returns gracefully" {
   rm -f "$TEST_DIR/scripts/tts-native.sh"
   # Write TTS config with backend=auto directly (no run_peon_tts indirection)
