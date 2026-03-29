@@ -1,0 +1,30 @@
+{"event":"session-start","role":"planner","sprint_tag":"TTSINTEG","card_id":"3c490l","cycle":1,"timestamp":"2026-03-29T04:15:00Z"}
+{"event":"read-inbox","data":{"file":"TTSINTEG-3c490l-planner-1.md"},"timestamp":"2026-03-29T04:15:01Z"}
+{"event":"search-existing","data":{"query":"template key resolution PowerShell","duplicates_found":0},"timestamp":"2026-03-29T04:15:10Z"}
+{"event":"search-existing","data":{"query":"test-mode file writes peon.sh","duplicates_found":0},"timestamp":"2026-03-29T04:15:10Z"}
+{"event":"create-card","data":{"card_id":"gtuv06","type":"refactor","title":"step-5A-extract-shared-template-key-resolution-helper-in-powershell"},"timestamp":"2026-03-29T04:16:00Z"}
+{"event":"create-card","data":{"card_id":"02x5jy","type":"refactor","title":"step-5B-group-test-mode-file-writes-in-peon-sh-python-block"},"timestamp":"2026-03-29T04:16:00Z"}
+{"event":"move-to-todo","data":{"card_id":"gtuv06"},"timestamp":"2026-03-29T04:16:30Z"}
+{"event":"move-to-todo","data":{"card_id":"02x5jy"},"timestamp":"2026-03-29T04:16:30Z"}
+{"event":"session-end","cards_created":2,"cards_skipped":0,"timestamp":"2026-03-29T04:17:00Z"}
+{"timestamp":"2026-03-29T04:18:13Z","operation":"hook_cmd","command":"rm -f /c/Users/Cameron/Projects/peon-ping/.gitban/agents/traces/*.stale /c/Users/Cameron/Projects/peon-ping/.gitban/agents/traces/*.alive 2>/dev/null; git worktree prune 2>/dev/null; echo \"cleaned\""}
+{"timestamp":"2026-03-29T04:18:27Z","operation":"hook_cmd","command":"bash /c/Users/Cameron/Projects/peon-ping/.gitban/hooks/agent-watchdog.sh \"TTSINTEG-s81ofk-executor-1\" 300 30 &"}
+{"timestamp":"2026-03-29T04:18:29Z","operation":"hook_cmd","command":"bash /c/Users/Cameron/Projects/peon-ping/.gitban/hooks/agent-watchdog.sh \"TTSINTEG-p7hchj-executor-1\" 300 30 &"}
+{"timestamp":"2026-03-29T04:18:41Z","operation":"hook_cmd","command":"rm -f /c/Users/Cameron/Projects/peon-ping/.git/config.lock 2>/dev/null; git worktree prune 2>/dev/null; git branch -D worktree-agent-a8fe1e45 2>/dev/null; echo \"fixed\""}
+{"timestamp":"2026-03-29T07:45:31Z","operation":"hook_cmd","command":"git log worktree-agent-afe84df8 --oneline -5"}
+{"timestamp":"2026-03-29T07:45:31Z","operation":"hook_cmd","command":"git log worktree-agent-a56c96d1 --oneline -5"}
+{"timestamp":"2026-03-29T07:45:42Z","operation":"hook_cmd","command":"git merge worktree-agent-afe84df8 --no-edit"}
+{"timestamp":"2026-03-29T07:45:57Z","operation":"hook_cmd","command":"git merge worktree-agent-a56c96d1 --no-edit"}
+{"timestamp":"2026-03-29T07:46:08Z","operation":"hook_cmd","command":"git tag -d \"TTSINTEG-s81ofk-done\" 2>/dev/null; git tag -d \"TTSINTEG-p7hchj-done\" 2>/dev/null; git worktree remove --force \".claude/worktrees/agent-afe84df8\" 2>/dev/null; git worktree remove --force \".claude/worktrees/agent-a56c96d1\" 2>/dev/null; git branch -D worktree-agent-afe84df8 2>/dev/null; git branch -D worktree-agent-a56c96d1 2>/dev/null; git worktree prune; echo \"cleanup done\""}
+{"timestamp":"2026-03-29T07:51:19Z","operation":"hook_cmd","command":"powershell -Command \"Invoke-Pester -Path tests/adapters-windows.Tests.ps1,tests/tts-resolution.Tests.ps1 -Output Minimal\" 2>&1"}
+{"timestamp":"2026-03-29T07:51:53Z","operation":"hook_cmd","command":"cat \"C:\\Users\\Cameron\\AppData\\Local\\Temp\\claude\\C--Users-Cameron-Projects-peon-ping\\91ab2c97-61c2-4433-a414-f3e8e94055ef\\tasks\\b21dacsv1.output\" 2>/dev/null | tail -10"}
+{"timestamp":"2026-03-29T07:52:02Z","operation":"hook_cmd","command":"git log --oneline -5"}
+{"timestamp":"2026-03-29T07:52:08Z","operation":"hook_cmd","command":"bash /c/Users/Cameron/Projects/peon-ping/.gitban/hooks/agent-watchdog.sh \"TTSINTEG-s81ofk-reviewer-1\" 180 30 &"}
+{"timestamp":"2026-03-29T07:52:11Z","operation":"hook_cmd","command":"bash /c/Users/Cameron/Projects/peon-ping/.gitban/hooks/agent-watchdog.sh \"TTSINTEG-p7hchj-reviewer-1\" 180 30 &"}
+{"timestamp":"2026-03-29T07:52:25Z","operation":"hook_cmd","command":"git show 26238c2 --stat"}
+{"timestamp":"2026-03-29T07:52:26Z","operation":"hook_cmd","command":"git show 3630dfd --stat"}
+{"timestamp":"2026-03-29T07:52:37Z","operation":"hook_cmd","command":"git show 3630dfd --format=\"\" -- tests/adapters-windows.Tests.ps1"}
+{"timestamp":"2026-03-29T07:52:40Z","operation":"hook_cmd","command":"git show 26238c2 --format=\"\""}
+{"timestamp":"2026-03-29T07:52:42Z","operation":"hook_cmd","command":"git show 3630dfd --format=\"\" -- install.ps1"}
+{"timestamp":"2026-03-29T07:52:48Z","operation":"hook_cmd","command":"cat docs/designs/tts-integration.md 2>/dev/null | head -200"}
+{"timestamp":"2026-03-29T07:53:37Z","operation":"hook_cmd","command":"ls docs/adr/ 2>/dev/null"}

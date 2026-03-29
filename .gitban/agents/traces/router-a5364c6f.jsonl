@@ -1,0 +1,11 @@
+{"ts":"2026-03-29T03:36:25Z","tool":"Read","input":{"file_path":"C:\\Users\\Cameron\\Projects\\peon-ping\\.claude\\skills\\router\\SKILL.md"},"agent_id":"a5364c6f","agent_type":"router"}
+{"ts":"2026-03-29T03:36:35Z","tool":"Bash","input":{"command":"export AGENT_LOG_DIR=\".gitban/agents/router/logs\" && export AGENT_ROLE=\"router\" && export AGENT_SPRINT_TAG=\"TTSINTEG\" && export AGENT_CARD_ID=\"7g52mr\" && export AGENT_CYCLE=\"1\" && source scripts/agent..."},"agent_id":"a5364c6f","agent_type":"router"}
+{"ts":"2026-03-29T03:36:42Z","tool":"Bash","input":{"command":"ls C:/Users/Cameron/Projects/peon-ping/.gitban/agents/reviewer/inbox/TTSINTEG-7g52mr-reviewer-*.md 2>/dev/null"},"agent_id":"a5364c6f","agent_type":"router"}
+{"ts":"2026-03-29T03:36:51Z","tool":"Glob","input":{"pattern":".gitban/agents/reviewer/inbox/TTSINTEG-7g52mr-reviewer-*.md","path":"C:\\Users\\Cameron\\Projects\\peon-ping"},"agent_id":"a5364c6f","agent_type":"router"}
+{"ts":"2026-03-29T03:36:51Z","tool":"Glob","input":{"pattern":"scripts/agent-log.sh","path":"C:\\Users\\Cameron\\Projects\\peon-ping"},"agent_id":"a5364c6f","agent_type":"router"}
+{"ts":"2026-03-29T03:36:56Z","tool":"Glob","input":{"pattern":".gitban/agents/reviewer/inbox/*","path":"C:\\Users\\Cameron\\Projects\\peon-ping"},"agent_id":"a5364c6f","agent_type":"router"}
+{"ts":"2026-03-29T03:36:57Z","tool":"Glob","input":{"pattern":"scripts/agent-log*","path":"C:\\Users\\Cameron\\Projects\\peon-ping"},"agent_id":"a5364c6f","agent_type":"router"}
+{"ts":"2026-03-29T03:37:05Z","tool":"Glob","input":{"pattern":".gitban/**/*TTSINTEG*","path":"C:\\Users\\Cameron\\Projects\\peon-ping"},"agent_id":"a5364c6f","agent_type":"router"}
+{"ts":"2026-03-29T03:37:05Z","tool":"Glob","input":{"pattern":".gitban/**/*7g52mr*","path":"C:\\Users\\Cameron\\Projects\\peon-ping"},"agent_id":"a5364c6f","agent_type":"router"}
+{"ts":"2026-03-29T03:37:11Z","tool":"Read","input":{"file_path":"C:\\Users\\Cameron\\Projects\\peon-ping\\.gitban\\agents\\dispatcher\\inbox\\TTSINTEG-dispatch-log.md"},"agent_id":"a5364c6f","agent_type":"router"}
+{"ts":"2026-03-29T03:37:18Z","tool":"Glob","input":{"pattern":".gitban/agents/router/inbox/*TTSINTEG*","path":"C:\\Users\\Cameron\\Projects\\peon-ping"},"agent_id":"a5364c6f","agent_type":"router"}

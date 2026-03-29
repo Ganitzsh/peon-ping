@@ -38,7 +38,7 @@ versions:
       a context-aware personal assistant. Users get the right pack for the right
       project automatically, richer notification content, and a built-in fitness
       trainer that leverages the hook event stream.
-    status: in_progress
+    status: done
     start_date: '2026-02-16'
     target_completion: '2026-06-30'
     milestones:
@@ -289,7 +289,7 @@ versions:
           300 squats throughout the day, piggybacking on IDE hook events. No
           daemon, no cron. Windows implementation shipped (peon.ps1 trainer CLI
           + hook reminders + Pester tests). Unix/peon.sh implementation remains.
-        status: todo
+        status: done
         docs_ref: docs/plans/2026-02-16-trainer-mode-design.md
         success_criteria:
           - peon trainer on/off/status/log/goal CLI commands work
@@ -307,7 +307,7 @@ versions:
               (on/off/status/log/goal) in peon.sh case statement. Trainer sounds
               directory scaffold with manifest.json. Windows parity already
               shipped in peon.ps1.
-            status: todo
+            status: done
             priority: high
             projects:
               trainer-scaffold:
@@ -318,7 +318,7 @@ versions:
                   manifest.json with placeholder entries, and add trainer
                   section to config.json defaults.
                 sequence: 1
-                status: todo
+                status: done
               trainer-cli:
                 id: trainer-cli
                 title: CLI subcommands — on/off/status/log/goal
@@ -328,7 +328,7 @@ versions:
                 sequence: 2
                 depends_on:
                   - trainer-scaffold
-                status: todo
+                status: done
               win-trainer-cli:
                 id: win-trainer-cli
                 title: Windows parity — trainer CLI and state management
@@ -346,7 +346,7 @@ versions:
               trainer reminder. Pace-based slacking detection. Skip on
               SessionStart to avoid stacking. Windows parity already shipped in
               peon.ps1.
-            status: todo
+            status: done
             priority: high
             depends_on:
               - trainer-core
@@ -359,7 +359,7 @@ versions:
                   trainer.remind or trainer.slacking manifest categories. Output
                   TRAINER_SOUND, TRAINER_VOL, TRAINER_MSG variables.
                 sequence: 1
-                status: todo
+                status: done
               reminder-playback:
                 id: reminder-playback
                 title: Delayed trainer sound playback in shell
@@ -369,7 +369,7 @@ versions:
                 sequence: 2
                 depends_on:
                   - reminder-logic
-                status: todo
+                status: done
               win-trainer-reminders:
                 id: win-trainer-reminders
                 title: Windows parity — hook-time trainer reminders (SHIPPED)
@@ -384,7 +384,7 @@ versions:
             description: Add trainer section to README, README_zh, help text,
               completions, and llms.txt. Document CLI commands, custom voice
               lines directory, and configuration.
-            status: todo
+            status: done
             priority: medium
             depends_on:
               - trainer-core
@@ -397,7 +397,7 @@ versions:
                   section to README and README_zh. Update completions.bash and
                   completions.fish. Update llms.txt.
                 sequence: 1
-                status: todo
+                status: done
       m0:
         id: m0
         title: Windows hooks never deadlock or lose state
@@ -459,7 +459,7 @@ versions:
           debug logging with phase timing, decision tracing, and daily log
           rotation. Users can diagnose timeout, config, pack, and audio failures
           from log output alone — no source reading required.
-        status: todo
+        status: done
         docs_ref: docs/designs/structured-hook-logging.md
         success_criteria:
           - debug config key enables structured logging with zero overhead when
@@ -481,7 +481,7 @@ versions:
               [trainer], [exit]. Zero overhead when disabled (no-op lambda/scriptblock).
               Cross-platform test fixtures prevent format drift between Python and
               PowerShell implementations.'
-            status: todo
+            status: done
             docs_ref: docs/designs/structured-hook-logging.md
           hook-logging-cli:
             id: hook-logging-cli
@@ -492,7 +492,7 @@ versions:
               completions.fish). Users can toggle logging and read/filter log
               files without editing config files or knowing log directory paths.
               Windows parity via peon.cmd delegation to peon.ps1.
-            status: todo
+            status: done
             docs_ref: docs/designs/structured-hook-logging.md
           hook-logging-docs:
             id: hook-logging-docs
@@ -503,6 +503,136 @@ versions:
               output with debug/logs commands. Update peon status --verbose to
               show debug logging state. Troubleshooting guide with common
               failure patterns.
-            status: todo
+            status: done
             docs_ref: docs/designs/structured-hook-logging.md
         sprint_tag: HOOKLOG
+      m5:
+        id: m5
+        title: The peon speaks to you
+        description: peon-ping gains a voice — hook events, notifications, and
+          trainer reminders can be spoken aloud with dynamic content that static
+          audio files cannot provide. A universal integration layer defines the
+          speak() contract and config schema. Each TTS backend (platform-native,
+          ElevenLabs, Piper, etc.) ships as its own independent feature
+          implementing that contract — no generic multi-provider abstraction
+          layers.
+        status: planned
+        success_criteria:
+          - Hook events can trigger spoken output in addition to or instead of
+            sound files
+          - TTS backend is pluggable — new engines can be added without changing
+            the integration layer
+          - Platform-native TTS works out of the box with zero setup on macOS,
+            Windows, and Linux
+          - Dynamic content (project name, event summary, trainer progress) can
+            be spoken
+          - TTS playback is async and does not block hook return
+          - peon tts CLI commands for toggling, testing, and configuring
+          - Pack manifests can define spoken text per category as alternative or
+            supplement to audio
+        features:
+          tts-integration:
+            id: tts-integration
+            title: TTS integration layer and backend contract
+            description: 'The foundation everything else builds on. Define the backend
+              interface: speak(text, voice, rate, volume) → async fire-and-forget.
+              Add tts section to config.json (enabled, backend, voice, rate, volume,
+              mode). Hook pipeline calls the integration layer after sound selection
+              when TTS is enabled. Backend resolution: config.tts.backend selects
+              engine, "auto" picks the best available platform-native option. Speech
+              text resolution chain: manifest speech_text → notification template
+              → default template.'
+            status: planned
+            priority: high
+            docs_ref: docs/designs/tts-integration.md
+          tts-native:
+            id: tts-native
+            title: Platform-native TTS backends
+            description: 'First working backend — zero-dependency TTS using OS built-ins.
+              macOS: say command. Windows: System.Speech.Synthesis (SAPI5) via Start-Process
+              (matching win-play.ps1 async pattern). Linux: espeak-ng → piper (BYO)
+              priority chain. Async via background process (nohup/Start-Process).
+              Voice enumeration logic per platform for the voices command.'
+            status: planned
+            priority: high
+            depends_on:
+              - tts-integration
+          tts-cli:
+            id: tts-cli
+            title: TTS CLI commands and configuration
+            description: 'User-facing controls for TTS. Subcommands: peon tts on/off/status/test/voices/voice/backend.
+              peon tts test speaks a sample phrase with current config (requires a
+              working backend). peon tts voices lists available voices (delegates
+              to platform enumeration from tts-native). peon status --verbose shows
+              TTS state. Shell completions (bash, fish) updated.'
+            status: planned
+            priority: high
+            depends_on:
+              - tts-native
+          tts-notifications:
+            id: tts-notifications
+            title: Spoken notifications and trainer reminders
+            description: 'Integrate TTS into the notification and trainer pipelines
+              — the features that benefit most from dynamic speech. Notification templates
+              rendered as spoken text (all 5 categories: stop, error, permission,
+              idle, question). Trainer reminders speak dynamic progress (e.g. "75
+              of 300 pushups. 50 of 300 squats. 21 percent."). Trainer slacking lines
+              spoken with harsher tone. Pack manifests gain optional speech_text field
+              per category entry for pack-authored spoken content with template variables.'
+            status: planned
+            priority: medium
+            depends_on:
+              - tts-native
+          tts-docs:
+            id: tts-docs
+            title: TTS documentation
+            description: Complete documentation covering the shipped feature.
+              README.md TTS section (setup, modes, voice selection,
+              troubleshooting). README_zh.md Chinese translation. docs/public/
+              llms.txt updated. peon help output updated. Pack author guide for
+              speech_text in manifests. Voice quality comparison per platform.
+              Completions already shipped with tts-cli — this covers prose docs
+              only.
+            status: planned
+            priority: medium
+            depends_on:
+              - tts-cli
+              - tts-notifications
+          tts-elevenlabs:
+            id: tts-elevenlabs
+            title: ElevenLabs TTS backend
+            description: 'Independent premium backend for users who want high-quality
+              natural voices. User-provided API key stored in config (tts.elevenlabs_api_key
+              or ELEVENLABS_API_KEY env var). Audio caching: text hash → cached MP3
+              file to minimize API calls and latency. Implements the speak() contract
+              from tts-integration. Ships its own cache management (peon tts cache
+              clear/stats).'
+            status: planned
+            priority: medium
+            depends_on:
+              - tts-cli
+          tts-piper:
+            id: tts-piper
+            title: Piper TTS backend (local neural)
+            description: Independent local AI backend for users who want
+              near-cloud quality without network dependency or ongoing cost. BYO
+              install — peon-ping detects installed piper binary and model
+              files, does not manage downloads. Implements the speak() contract
+              from tts-integration. Best-effort Linux support (primary dev/test
+              is Windows and macOS).
+            status: planned
+            priority: low
+            depends_on:
+              - tts-cli
+          tts-suppression-granularity:
+            id: tts-suppression-granularity
+            title: Granular TTS suppression (tab-focused)
+            description: Add suppress_tts_when_tab_focused config key so users
+              can suppress sound but still hear TTS when their terminal tab is
+              focused. Currently both modalities are suppressed uniformly by
+              suppress_sound_when_tab_focused.
+            status: planned
+            priority: low
+            depends_on:
+              - tts-integration
+        docs_ref: docs/prds/PRD-003-tts-spoken-feedback.md

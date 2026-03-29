@@ -1,0 +1,13 @@
+{"timestamp":"2026-03-29T07:57:08Z","operation":"init","role":"reviewer","sprint":"TTSINTEG","card_id":"s81ofk","cycle":1}
+{"timestamp":"2026-03-29T07:57:08Z","operation":"event","label":"read-diff","metadata":{"commit":"26238c2"}}
+{"timestamp":"2026-03-29T07:57:08Z","operation":"event","label":"read-card","metadata":{"card_id":"s81ofk"}}
+{"timestamp":"2026-03-29T07:57:08Z","operation":"event","label":"read-adr","metadata":{"file":"ADR-001-tts-backend-architecture.md"}}
+{"timestamp":"2026-03-29T07:57:09Z","operation":"hook_cmd","command":"export AGENT_LOG_DIR=\".gitban/agents/reviewer/logs\" && export AGENT_ROLE=\"reviewer\" && export AGENT_SPRINT_TAG=\"TTSINTEG\" && export AGENT_CARD_ID=\"s81ofk\" && export AGENT_CYCLE=\"1\" && source .gitban/hooks/agent-log.sh && agent_log_init && agent_log_event \"read-diff\" '{\"commit\":\"26238c2\"}' && agent_log_event \"read-card\" '{\"card_id\":\"s81ofk\"}' && agent_log_event \"read-adr\" '{\"file\":\"ADR-001-tts-backend-architecture.md\"}'"}
+{"timestamp":"2026-03-29T07:57:32Z","operation":"hook_cmd","command":"ls C:/Users/Cameron/Projects/peon-ping/.gitban/agents/reviewer/inbox/ 2>/dev/null || echo \"directory does not exist\""}
+{"timestamp":"2026-03-29T07:58:15Z","operation":"hook_cmd","command":"cd C:/Users/Cameron/Projects/peon-ping && git add -f .gitban/agents/reviewer/inbox/TTSINTEG-p7hchj-reviewer-1.md"}
+{"timestamp":"2026-03-29T07:59:44Z","operation":"hook_cmd","command":"mkdir -p .gitban/agents/reviewer/inbox"}
+{"timestamp":"2026-03-29T08:01:03Z","operation":"hook_cmd","command":"git add .gitban/agents/reviewer/inbox/TTSINTEG-s81ofk-reviewer-1.md .gitban/agents/reviewer/logs/ 2>/dev/null; git add .gitban/cards/ 2>/dev/null; echo \"staged\""}
+{"timestamp":"2026-03-29T08:01:45Z","operation":"hook_cmd","command":"ls /c/Users/Cameron/Projects/peon-ping/.gitban/agents/reviewer/inbox/TTSINTEG-s81ofk-reviewer-1.md /c/Users/Cameron/Projects/peon-ping/.gitban/agents/reviewer/inbox/TTSINTEG-p7hchj-reviewer-1.md 2>/dev/null"}
+{"timestamp":"2026-03-29T08:02:10Z","operation":"hook_cmd","command":"bash /c/Users/Cameron/Projects/peon-ping/.gitban/hooks/agent-watchdog.sh \"TTSINTEG-s81ofk-router-1\" 120 30 &"}
+{"timestamp":"2026-03-29T08:02:23Z","operation":"hook_cmd","command":"bash /c/Users/Cameron/Projects/peon-ping/.gitban/hooks/agent-watchdog.sh \"TTSINTEG-p7hchj-router-1\" 120 30 &"}
+{"timestamp":"2026-03-29T08:03:45Z","operation":"hook_cmd","command":"ls C:/Users/Cameron/Projects/peon-ping/scripts/agent-log.sh 2>/dev/null; ls C:/Users/Cameron/Projects/peon-ping/.gitban/agents/reviewer/inbox/ 2>/dev/null | grep -i \"TTSINTEG-p7hchj-reviewer\""}

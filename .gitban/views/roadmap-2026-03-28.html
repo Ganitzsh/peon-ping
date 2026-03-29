@@ -1,0 +1,2197 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>peon-ping — Roadmap</title>
+  <style>
+    /* CSS Custom Properties — shared with board template */
+    :root {
+      /* Backgrounds */
+      --bg-page: #1a1a2e;
+      --bg-surface: #16213e;
+      --bg-card: #1f2b47;
+      --bg-hover: #253353;
+
+      /* Text */
+      --text-primary: #e0e0e0;
+      --text-secondary: #a0a0b0;
+      --text-muted: #606070;
+
+      /* Status */
+      --status-done: #4caf50;
+      --status-active: #2196f3;
+      --status-blocked: #f44336;
+      --status-todo: #78909c;
+      --status-backlog: #546e7a;
+
+      /* Priority */
+      --priority-p0: #f44336;
+      --priority-p1: #ffc107;
+      --priority-p2: #78909c;
+
+      /* Layout */
+      --radius: 6px;
+      --transition: 0.15s ease;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      line-height: 1.5;
+      padding: 16px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 16px;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .meta {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+
+    /* Breadcrumb */
+    .breadcrumb {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+    }
+
+    .breadcrumb-item {
+      color: var(--text-secondary);
+    }
+
+    .breadcrumb-sep {
+      color: var(--text-muted);
+    }
+
+    .breadcrumb-current {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    /* Tree */
+    .tree {
+      background: var(--bg-surface);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+
+    .tree-list {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .tree-list .tree-list {
+      padding-left: 24px;
+      margin-top: 2px;
+    }
+
+    .tree-children {
+      display: none;
+    }
+
+    .tree-children.expanded {
+      display: block;
+    }
+
+    .tree-node {
+      margin-bottom: 2px;
+    }
+
+    .node-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+
+    .node-row:hover {
+      background: var(--bg-hover);
+    }
+
+    /* Toggle button */
+    .toggle-btn {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 0.7rem;
+      flex-shrink: 0;
+      transition: background var(--transition), transform var(--transition);
+    }
+
+    .toggle-btn:hover {
+      background: var(--bg-hover);
+    }
+
+    .toggle-btn.expanded {
+      transform: rotate(90deg);
+    }
+
+    .toggle-spacer {
+      width: 20px;
+      flex-shrink: 0;
+    }
+
+    /* Status badge */
+    .status-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      flex-shrink: 0;
+    }
+
+    .status-badge.done { background: var(--status-done); color: #fff; }
+    .status-badge.in_progress { background: var(--status-active); color: #fff; }
+    .status-badge.todo { background: var(--status-todo); color: #fff; }
+
+    /* Node title */
+    .node-title {
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .node-id {
+      color: var(--text-muted);
+      font-family: monospace;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .node-level {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+      min-width: 55px;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      width: 80px;
+      height: 6px;
+      background: var(--bg-page);
+      border-radius: 3px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width var(--transition);
+    }
+
+    .progress-fill.done { background: var(--status-done); }
+    .progress-fill.in_progress { background: var(--status-active); }
+    .progress-fill.todo { background: var(--status-todo); }
+
+    .progress-text {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      min-width: 32px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* Node detail panel */
+    .node-detail {
+      margin-left: 28px;
+      padding: 8px 12px;
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      font-size: 0.8rem;
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+
+    .node-detail dl {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 12px;
+    }
+
+    .node-detail dt {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .node-detail dd {
+      color: var(--text-secondary);
+      word-break: break-word;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    noscript {
+      display: block;
+      margin-top: 16px;
+      padding: 12px;
+      background: var(--bg-surface);
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>peon-ping — Roadmap</h1>
+    <span class="meta">52 nodes &middot; 2026-03-28T23:30:50.318836+00:00</span>
+  </header>
+
+  
+
+  
+
+  
+
+  <div class="tree">
+    <ul class="tree-list">
+      
+      
+  <li class="tree-node" data-path="v2" data-depth="0">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle v2 — Personalization &amp; Intelligence">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">version</span>
+      <span class="node-id">v2</span>
+      <span class="node-title">v2 — Personalization &amp; Intelligence</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>version</dd>
+        <dt>Progress</dt><dd>24/24 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Transform peon-ping from a one-size-fits-all sound player into a context-aware personal assistant. Users get the right pack for the right project automatically, richer notification content, and a built-in fitness trainer that leverages the hook event stream.</dd>
+        
+        <dt>start_date</dt><dd>2026-02-16</dd>
+        
+        <dt>target_completion</dt><dd>2026-06-30</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m1" data-depth="1">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle The right pack plays for the right project automatically">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">milestone</span>
+      <span class="node-id">m1</span>
+      <span class="node-title">The right pack plays for the right project automatically</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m1</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>milestone</dd>
+        <dt>Progress</dt><dd>3/3 (100.0%)</dd>
+        
+        <dt>description</dt><dd>The right sound pack plays for the right project automatically, without manual per-session overrides. Config naming reflects the actual override hierarchy clearly.</dd>
+        
+        <dt>docs_ref</dt><dd>docs/plans/2026-02-19-path-rules-design.md</dd>
+        
+        <dt>success_criteria</dt><dd>[&#39;path_rules glob matching selects pack based on cwd&#39;, &#39;default_pack replaces misleading active_pack key&#39;, &#39;session_override replaces misleading agentskill mode name&#39;, &#39;peon update migrates old config keys automatically&#39;, &#39;peon status shows active path rule when matched&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m1/path-rules" data-depth="2">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle Path Rules — Auto-assign packs per project">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">path-rules</span>
+      <span class="node-title">Path Rules — Auto-assign packs per project</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m1/path-rules</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>2/2 (100.0%)</dd>
+        
+        <dt>description</dt><dd>New path_rules config array that glob-matches cwd to assign sound packs automatically. First match wins. Override hierarchy: session_override &gt; local config &gt; path_rules &gt; pack_rotation &gt; default_pack.</dd>
+        
+        <dt>priority</dt><dd>high</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m1/path-rules/path-rules-matching" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">path-rules-matching</span>
+      <span class="node-title">Path rules matching logic in Python block</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m1/path-rules/path-rules-matching</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Add fnmatch-based path_rules evaluation in peon.sh Python block after config load, before rotation/default. First matching rule with an installed pack wins.</dd>
+        
+        <dt>sequence</dt><dd>1</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m1/path-rules/path-rules-status" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">path-rules-status</span>
+      <span class="node-title">Status output and documentation</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m1/path-rules/path-rules-status</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Update peon status to show active path rule when matched. Document path_rules in README, README_zh, help text, and llms.txt.</dd>
+        
+        <dt>sequence</dt><dd>2</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;path-rules-matching&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m1/config-renames" data-depth="2">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle Config key renames — active_pack and agentskill cleanup">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">config-renames</span>
+      <span class="node-title">Config key renames — active_pack and agentskill cleanup</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m1/config-renames</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Rename active_pack to default_pack and agentskill rotation mode to session_override. Migration handled in peon update with runtime fallback reading both old and new keys during transition.</dd>
+        
+        <dt>priority</dt><dd>medium</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m1/config-renames/rename-and-migrate" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">rename-and-migrate</span>
+      <span class="node-title">Rename config keys and add migration</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m1/config-renames/rename-and-migrate</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Rename active_pack to default_pack in config.json template. Rename agentskill to session_override. Add migration logic to peon update. Runtime reads new key with old key fallback.</dd>
+        
+        <dt>sequence</dt><dd>1</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m1/windows-cli" data-depth="2">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">windows-cli</span>
+      <span class="node-title">Path rules CLI on native Windows</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:0.0%"></div>
+      </div>
+      <span class="progress-text">0%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m1/windows-cli</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>0/0 (0.0%)</dd>
+        
+        <dt>description</dt><dd>peon packs bind/unbind/bindings commands are bash+Python only. Native Windows users have no way to manage path_rules without manually editing config.json. Need PowerShell equivalents in install.ps1 or a standalone peon.cmd wrapper.</dd>
+        
+        <dt>priority</dt><dd>high</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m2" data-depth="1">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle Notifications tell you what happened, not just that something happened">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">milestone</span>
+      <span class="node-id">m2</span>
+      <span class="node-title">Notifications tell you what happened, not just that something happened</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>milestone</dd>
+        <dt>Progress</dt><dd>12/12 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Notifications become informative, actionable, and well-documented. Users see meaningful context in notification messages, can click notifications to focus their IDE, and can easily discover how to control sounds vs popups independently.</dd>
+        
+        <dt>success_criteria</dt><dd>[&#39;Notification messages render user-configured templates with event variables&#39;, &#39;Clicking a macOS notification overlay focuses the IDE window (single-window)&#39;, &#39;Users can easily discover sounds-without-popups via CLI help and README&#39;, &#39;Three independent toggles (sounds, popups, mobile) clearly documented&#39;]</dd>
+        
+        <dt>docs_ref</dt><dd>docs/prds/PRD-001-m2-close-out-smart-notifications.md</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m2/notification-templates" data-depth="2">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle Notification Message Templates">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">notification-templates</span>
+      <span class="node-title">Notification Message Templates</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2/notification-templates</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>6/6 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Configurable notification message content with format string templates per event type. Template keys map to CESP categories (stop, permission, error, idle, question). Variables include {project}, {summary}, {tool_name}, {status}, {event}. Defaults to current behavior when no templates configured. Unix and Windows implementations complete.</dd>
+        
+        <dt>priority</dt><dd>high</dd>
+        
+        <dt>docs_ref</dt><dd>docs/plans/2026-02-24-notification-templates-design.md</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m2/notification-templates/template-engine" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">template-engine</span>
+      <span class="node-title">Template resolution engine in Python event parser</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2/notification-templates/template-engine</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Add notification_templates config key. After per-event msg construction, apply str.format_map() with defaultdict(str) for safe missing-key handling.</dd>
+        
+        <dt>sequence</dt><dd>1</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m2/notification-templates/template-cli" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">template-cli</span>
+      <span class="node-title">CLI subcommand — peon notifications template</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2/notification-templates/template-cli</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Add template get/set/reset to peon notifications subcommand. Show templates in peon status. Update help text.</dd>
+        
+        <dt>sequence</dt><dd>2</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;template-engine&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m2/notification-templates/template-tests" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">template-tests</span>
+      <span class="node-title">BATS tests for notification templates</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2/notification-templates/template-tests</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Test template resolution with {summary}, {tool_name}, unknown variables rendering as empty, fallback to project name when no template, CLI set/get/reset, and status display.</dd>
+        
+        <dt>sequence</dt><dd>2</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;template-engine&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m2/notification-templates/win-template-engine" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">win-template-engine</span>
+      <span class="node-title">Windows parity — template resolution engine in peon.ps1</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2/notification-templates/win-template-engine</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Port notification template resolution from peon.sh Python block to PowerShell in peon.ps1. Regex-based variable substitution, same 5 template keys and 5 variables. Windows parity.</dd>
+        
+        <dt>sequence</dt><dd>4</dd>
+        
+        <dt>docs_ref</dt><dd>docs/designs/win-notification-templates.md</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m2/notification-templates/win-template-cli" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">win-template-cli</span>
+      <span class="node-title">Windows parity — template CLI subcommand in peon.ps1</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2/notification-templates/win-template-cli</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Port peon notifications template get/set/reset CLI subcommand to peon.ps1. Same UX as Unix. Windows parity.</dd>
+        
+        <dt>sequence</dt><dd>5</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;win-template-engine&#39;]</dd>
+        
+        <dt>docs_ref</dt><dd>docs/designs/win-notification-templates.md</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m2/notification-templates/win-template-tests" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">win-template-tests</span>
+      <span class="node-title">Windows parity — Pester tests for notification templates</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2/notification-templates/win-template-tests</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Pester tests covering template resolution, CLI get/set/reset, unknown variable handling, and fallback behavior. Windows parity.</dd>
+        
+        <dt>sequence</dt><dd>6</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;win-template-engine&#39;, &#39;win-template-cli&#39;]</dd>
+        
+        <dt>docs_ref</dt><dd>docs/designs/win-notification-templates.md</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m2/ide-click-to-focus" data-depth="2">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle IDE Click-to-Focus">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">ide-click-to-focus</span>
+      <span class="node-title">IDE Click-to-Focus</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2/ide-click-to-focus</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>4/4 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Clicking a notification focuses the IDE window. macOS: lsappinfo bundle ID from PID, NSRunningApplication fallback in mac-overlay.js, iTerm2 tab-level focus. Windows: SetForegroundWindow with AttachThreadInput workaround, process-name and PID-based targeting. Both platforms shipped and tested.</dd>
+        
+        <dt>priority</dt><dd>medium</dd>
+        
+        <dt>docs_ref</dt><dd>docs/plans/2026-02-20-ide-click-to-focus-design.md</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m2/ide-click-to-focus/bundle-id-fallback" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">bundle-id-fallback</span>
+      <span class="node-title">Bundle ID from PID fallback in peon.sh</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2/ide-click-to-focus/bundle-id-fallback</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Add _mac_bundle_id_from_pid() using lsappinfo. In send_notification(), when bundle_id is empty and ide_pid &gt; 0, derive bundle_id from the PID.</dd>
+        
+        <dt>sequence</dt><dd>1</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m2/ide-click-to-focus/overlay-pid-activation" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">overlay-pid-activation</span>
+      <span class="node-title">PID-based activation in mac-overlay.js</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2/ide-click-to-focus/overlay-pid-activation</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>When bundleId is empty but idePid &gt; 0, use NSRunningApplication.runningApplicationWithProcessIdentifier_() to activate the IDE app.</dd>
+        
+        <dt>sequence</dt><dd>1</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m2/ide-click-to-focus/click-to-focus-tests" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">click-to-focus-tests</span>
+      <span class="node-title">BATS tests for click-to-focus</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2/ide-click-to-focus/click-to-focus-tests</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Mock lsappinfo returning bundle ID for a given PID. Test _mac_bundle_id_from_pid with pid=0 returns empty. Test overlay ide_pid activation when bundle_id is empty.</dd>
+        
+        <dt>sequence</dt><dd>2</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;bundle-id-fallback&#39;, &#39;overlay-pid-activation&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m2/ide-click-to-focus/win-click-to-focus" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">win-click-to-focus</span>
+      <span class="node-title">Windows parity — click-to-focus via SetForegroundWindow (SHIPPED)</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2/ide-click-to-focus/win-click-to-focus</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Toast click activates IDE window via SetForegroundWindow/process name matching in win-notify.ps1. Pester tests in win-click-to-focus.Tests.ps1. Already shipped.</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m2/selective-sound-control" data-depth="2">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle Selective Sound Control — Documentation &amp; Discoverability">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">selective-sound-control</span>
+      <span class="node-title">Selective Sound Control — Documentation &amp; Discoverability</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2/selective-sound-control</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>2/2 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Improve discoverability of the existing desktop_notifications feature. No core logic changes — purely CLI help, verbose status, README sections, skill docs, and llms.txt updates.</dd>
+        
+        <dt>priority</dt><dd>low</dd>
+        
+        <dt>docs_ref</dt><dd>docs/plans/2026-02-25-selective-sound-control-design.md</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m2/selective-sound-control/verbose-status" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">verbose-status</span>
+      <span class="node-title">Add --verbose flag to peon status</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2/selective-sound-control/verbose-status</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Added --verbose flag to peon status showing desktop and mobile notification states with clarifying text. Added peon popups alias for notifications command. Already shipped.</dd>
+        
+        <dt>sequence</dt><dd>1</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m2/selective-sound-control/sound-control-docs" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">sound-control-docs</span>
+      <span class="node-title">README and skill documentation updates</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m2/selective-sound-control/sound-control-docs</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>README English done (Common Use Cases, Independent Controls table). Skills docs done. llms.txt done. README_zh.md still needs translated sections.</dd>
+        
+        <dt>sequence</dt><dd>1</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m3" data-depth="1">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle Your coding sessions keep you physically active">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">milestone</span>
+      <span class="node-id">m3</span>
+      <span class="node-title">Your coding sessions keep you physically active</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m3</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>milestone</dd>
+        <dt>Progress</dt><dd>7/7 (100.0%)</dd>
+        
+        <dt>description</dt><dd>The peon IS your personal trainer. Pavel-style daily exercise mode where the Warcraft peon nags you to do 300 pushups and 300 squats throughout the day, piggybacking on IDE hook events. No daemon, no cron. Windows implementation shipped (peon.ps1 trainer CLI + hook reminders + Pester tests). Unix/peon.sh implementation remains.</dd>
+        
+        <dt>docs_ref</dt><dd>docs/plans/2026-02-16-trainer-mode-design.md</dd>
+        
+        <dt>success_criteria</dt><dd>[&#39;peon trainer on/off/status/log/goal CLI commands work&#39;, &#39;Hook events trigger trainer reminders at configurable intervals&#39;, &#39;Daily progress resets at midnight automatically&#39;, &#39;Slacking detection fires harsher voice lines when behind pace&#39;, &#39;Trainer sounds play after normal hook sounds with delay&#39;, &#39;README and help text document trainer mode&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m3/trainer-core" data-depth="2">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle Trainer Core — CLI, state, and config">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">trainer-core</span>
+      <span class="node-title">Trainer Core — CLI, state, and config</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m3/trainer-core</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>3/3 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Trainer config section in config.json, state management in .state.json with auto-reset on new day, and CLI subcommands (on/off/status/log/goal) in peon.sh case statement. Trainer sounds directory scaffold with manifest.json. Windows parity already shipped in peon.ps1.</dd>
+        
+        <dt>priority</dt><dd>high</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m3/trainer-core/trainer-scaffold" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">trainer-scaffold</span>
+      <span class="node-title">Directory scaffold and config defaults</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m3/trainer-core/trainer-scaffold</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Create trainer/sounds/{remind,log,complete,slacking}/ directories, manifest.json with placeholder entries, and add trainer section to config.json defaults.</dd>
+        
+        <dt>sequence</dt><dd>1</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m3/trainer-core/trainer-cli" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">trainer-cli</span>
+      <span class="node-title">CLI subcommands — on/off/status/log/goal</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m3/trainer-core/trainer-cli</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Add trainer) case to peon.sh with Python-backed subcommands for enabling/disabling, showing progress bars, logging reps, and setting goals. TDD with tests/trainer.bats.</dd>
+        
+        <dt>sequence</dt><dd>2</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;trainer-scaffold&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m3/trainer-core/win-trainer-cli" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">win-trainer-cli</span>
+      <span class="node-title">Windows parity — trainer CLI and state management (SHIPPED)</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m3/trainer-core/win-trainer-cli</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>peon train on/off/status/log/goal subcommands in peon.ps1 with state management. Pester tests in trainer-windows.Tests.ps1. Already shipped.</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m3/trainer-reminders" data-depth="2">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle Trainer Reminders — Hook event integration">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">trainer-reminders</span>
+      <span class="node-title">Trainer Reminders — Hook event integration</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m3/trainer-reminders</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>3/3 (100.0%)</dd>
+        
+        <dt>description</dt><dd>On each hook event, after normal sound routing, check trainer config/state and optionally play a second sound for trainer reminder. Pace-based slacking detection. Skip on SessionStart to avoid stacking. Windows parity already shipped in peon.ps1.</dd>
+        
+        <dt>priority</dt><dd>high</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;trainer-core&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m3/trainer-reminders/reminder-logic" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">reminder-logic</span>
+      <span class="node-title">Reminder logic in Python hook block</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m3/trainer-reminders/reminder-logic</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>After main sound selection, check trainer enabled, date reset, interval elapsed, and pace. Pick from trainer.remind or trainer.slacking manifest categories. Output TRAINER_SOUND, TRAINER_VOL, TRAINER_MSG variables.</dd>
+        
+        <dt>sequence</dt><dd>1</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m3/trainer-reminders/reminder-playback" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">reminder-playback</span>
+      <span class="node-title">Delayed trainer sound playback in shell</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m3/trainer-reminders/reminder-playback</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>After main sound playback, if TRAINER_SOUND is set, play with 1s delay. Desktop notification with progress summary. Synchronous in test mode.</dd>
+        
+        <dt>sequence</dt><dd>2</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;reminder-logic&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m3/trainer-reminders/win-trainer-reminders" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">win-trainer-reminders</span>
+      <span class="node-title">Windows parity — hook-time trainer reminders (SHIPPED)</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m3/trainer-reminders/win-trainer-reminders</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Trainer reminder logic in peon.ps1 hook path. Fires after main sound with delay. Pester coverage in trainer-windows.Tests.ps1. Already shipped.</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m3/trainer-docs" data-depth="2">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle Trainer Documentation">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">trainer-docs</span>
+      <span class="node-title">Trainer Documentation</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m3/trainer-docs</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Add trainer section to README, README_zh, help text, completions, and llms.txt. Document CLI commands, custom voice lines directory, and configuration.</dd>
+        
+        <dt>priority</dt><dd>medium</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;trainer-core&#39;, &#39;trainer-reminders&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m3/trainer-docs/trainer-docs-all" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">trainer-docs-all</span>
+      <span class="node-title">Help text, README, and completions updates</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m3/trainer-docs/trainer-docs-all</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Add trainer to peon help output. Add Trainer Mode section to README and README_zh. Update completions.bash and completions.fish. Update llms.txt.</dd>
+        
+        <dt>sequence</dt><dd>1</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m0" data-depth="1">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle Windows hooks never deadlock or lose state">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">milestone</span>
+      <span class="node-id">m0</span>
+      <span class="node-title">Windows hooks never deadlock or lose state</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m0</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>milestone</dd>
+        <dt>Progress</dt><dd>2/2 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Eliminate P0 hook reliability bugs on native Windows that make peon-ping unusable. Async audio playback, state file concurrency safety, and deadlock prevention.</dd>
+        
+        <dt>docs_ref</dt><dd>docs/adr/proposals/ADR-001-async-audio-and-safe-state-on-windows.md</dd>
+        
+        <dt>success_criteria</dt><dd>[&#39;Windows hooks return within 200ms (excluding PowerShell startup)&#39;, &#39;Zero deadlocks under multi-agent sprint dispatch (20+ agents)&#39;, &#39;Zero state file corruption under concurrent hook invocations&#39;, &#39;Audio plays reliably as fire-and-forget on all Stop/SessionStart events&#39;]</dd>
+        
+        <dt>upstream_version</dt><dd>2.15.1</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m0/async-audio" data-depth="2">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle Async Audio Playback">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">async-audio</span>
+      <span class="node-title">Async Audio Playback</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m0/async-audio</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Replace inline synchronous audio in peon.ps1 with Start-Process delegation to scripts/win-play.ps1 as a detached process. Eliminate MediaPlayer WPF deadlock.</dd>
+        
+        <dt>priority</dt><dd>critical</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m0/async-audio/detach-audio" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">detach-audio</span>
+      <span class="node-title">Delegate audio to detached win-play.ps1 process</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m0/async-audio/detach-audio</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Remove inline SoundPlayer.PlaySync() and MediaPlayer code from peon.ps1. Use Start-Process -WindowStyle Hidden to spawn win-play.ps1 as fire-and-forget. Add process-level self-timeout (8s safety net).</dd>
+        
+        <dt>sequence</dt><dd>1</dd>
+        
+        <dt>docs_ref</dt><dd>docs/designs/async-audio-and-safe-state-on-windows.md</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m0/state-concurrency" data-depth="2">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle State File Concurrency Safety">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">state-concurrency</span>
+      <span class="node-title">State File Concurrency Safety</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m0/state-concurrency</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Add atomic write pattern (write-to-temp + rename) and retry-on-lock-failure to .state.json operations in peon.ps1.</dd>
+        
+        <dt>priority</dt><dd>high</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;async-audio&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m0/state-concurrency/atomic-state" data-depth="3">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">project</span>
+      <span class="node-id">atomic-state</span>
+      <span class="node-title">Atomic state file writes with lock retry</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:100.0%"></div>
+      </div>
+      <span class="progress-text">100%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m0/state-concurrency/atomic-state</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>project</dd>
+        <dt>Progress</dt><dd>1/1 (100.0%)</dd>
+        
+        <dt>description</dt><dd>Write .state.json to temp file then rename (atomic on NTFS). Add retry with backoff on read failures. Degrade gracefully to empty defaults if state unavailable.</dd>
+        
+        <dt>sequence</dt><dd>1</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m4" data-depth="1">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle When something breaks, you can see why">&#9654;</button>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">milestone</span>
+      <span class="node-id">m4</span>
+      <span class="node-title">When something breaks, you can see why</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:0.0%"></div>
+      </div>
+      <span class="progress-text">0%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m4</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>milestone</dd>
+        <dt>Progress</dt><dd>0/0 (0.0%)</dd>
+        
+        <dt>description</dt><dd>Structured observability for hook execution. Configurable debug logging with phase timing, decision tracing, and daily log rotation. Users can diagnose timeout, config, pack, and audio failures from log output alone — no source reading required.</dd>
+        
+        <dt>docs_ref</dt><dd>docs/designs/structured-hook-logging.md</dd>
+        
+        <dt>success_criteria</dt><dd>[&#39;debug config key enables structured logging with zero overhead when disabled&#39;, &#39;Log entries cover all decision phases: event routing, config load, pack selection, sound pick, playback, notification&#39;, &#39;peon debug on/off and peon logs CLI commands work on all platforms&#39;, &#39;Daily log rotation with configurable retention (default 7 days)&#39;, &#39;Worktree-safe concurrent append logging with session/cwd correlation&#39;]</dd>
+        
+        <dt>sprint_tag</dt><dd>HOOKLOG</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m4/hook-logging-core" data-depth="2">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">hook-logging-core</span>
+      <span class="node-title">Core structured logging in hook scripts</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:0.0%"></div>
+      </div>
+      <span class="progress-text">0%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m4/hook-logging-core</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>0/0 (0.0%)</dd>
+        
+        <dt>description</dt><dd>Add inline phase-emitting log calls to both peon.sh (Python block) and peon.ps1 (PowerShell). Implements debug and debug_retention_days config keys, daily-rotated log files under $PEON_DIR/logs/, invocation ID correlation, and PEON_DEBUG=1 env var override. Covers all decision phases: [hook], [config], [state], [route], [sound], [play], [notify], [trainer], [exit]. Zero overhead when disabled (no-op lambda/scriptblock). Cross-platform test fixtures prevent format drift between Python and PowerShell implementations.</dd>
+        
+        <dt>docs_ref</dt><dd>docs/designs/structured-hook-logging.md</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m4/hook-logging-cli" data-depth="2">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">hook-logging-cli</span>
+      <span class="node-title">CLI commands for debug toggle and log reading</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:0.0%"></div>
+      </div>
+      <span class="progress-text">0%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m4/hook-logging-cli</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>0/0 (0.0%)</dd>
+        
+        <dt>description</dt><dd>Add peon debug on|off|status and peon logs [--last N] [--session ID] [--clear] CLI commands to both peon.sh and peon.ps1. Update shell completions (completions.bash, completions.fish). Users can toggle logging and read/filter log files without editing config files or knowing log directory paths. Windows parity via peon.cmd delegation to peon.ps1.</dd>
+        
+        <dt>docs_ref</dt><dd>docs/designs/structured-hook-logging.md</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m4/hook-logging-docs" data-depth="2">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge done">DONE</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">hook-logging-docs</span>
+      <span class="node-title">Documentation and discoverability for hook logging</span>
+      <div class="progress-container">
+        <div class="progress-fill done" style="width:0.0%"></div>
+      </div>
+      <span class="progress-text">0%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m4/hook-logging-docs</dd>
+        <dt>Status</dt><dd>done</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>0/0 (0.0%)</dd>
+        
+        <dt>description</dt><dd>Add Debugging section to README.md with examples of diagnosing the 5 common failure modes from log output. Translate to README_zh.md. Update docs/public/llms.txt. Update peon help output with debug/logs commands. Update peon status --verbose to show debug logging state. Troubleshooting guide with common failure patterns.</dd>
+        
+        <dt>docs_ref</dt><dd>docs/designs/structured-hook-logging.md</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m5" data-depth="1">
+    <div class="node-row">
+      
+      <button class="toggle-btn" aria-label="Toggle The peon speaks to you">&#9654;</button>
+      
+      <span class="status-badge planned">TODO</span>
+      <span class="node-level">milestone</span>
+      <span class="node-id">m5</span>
+      <span class="node-title">The peon speaks to you</span>
+      <div class="progress-container">
+        <div class="progress-fill planned" style="width:0.0%"></div>
+      </div>
+      <span class="progress-text">0%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m5</dd>
+        <dt>Status</dt><dd>planned</dd>
+        <dt>Level</dt><dd>milestone</dd>
+        <dt>Progress</dt><dd>0/0 (0.0%)</dd>
+        
+        <dt>description</dt><dd>peon-ping gains a voice — hook events, notifications, and trainer reminders can be spoken aloud with dynamic content that static audio files cannot provide. A universal integration layer defines the speak() contract and config schema. Each TTS backend (platform-native, ElevenLabs, Piper, etc.) ships as its own independent feature implementing that contract — no generic multi-provider abstraction layers.</dd>
+        
+        <dt>success_criteria</dt><dd>[&#39;Hook events can trigger spoken output in addition to or instead of sound files&#39;, &#39;TTS backend is pluggable — new engines can be added without changing the integration layer&#39;, &#39;Platform-native TTS works out of the box with zero setup on macOS, Windows, and Linux&#39;, &#39;Dynamic content (project name, event summary, trainer progress) can be spoken&#39;, &#39;TTS playback is async and does not block hook return&#39;, &#39;peon tts CLI commands for toggling, testing, and configuring&#39;, &#39;Pack manifests can define spoken text per category as alternative or supplement to audio&#39;]</dd>
+        
+        <dt>docs_ref</dt><dd>docs/prds/PRD-003-tts-spoken-feedback.md</dd>
+        
+      </dl>
+    </div>
+    
+    <ul class="tree-list tree-children">
+      
+      
+  <li class="tree-node" data-path="v2/m5/tts-integration" data-depth="2">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge planned">TODO</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">tts-integration</span>
+      <span class="node-title">TTS integration layer and backend contract</span>
+      <div class="progress-container">
+        <div class="progress-fill planned" style="width:0.0%"></div>
+      </div>
+      <span class="progress-text">0%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m5/tts-integration</dd>
+        <dt>Status</dt><dd>planned</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>0/0 (0.0%)</dd>
+        
+        <dt>description</dt><dd>The foundation everything else builds on. Define the backend interface: speak(text, voice, rate, volume) → async fire-and-forget. Add tts section to config.json (enabled, backend, voice, rate, volume, mode). Hook pipeline calls the integration layer after sound selection when TTS is enabled. Backend resolution: config.tts.backend selects engine, &#34;auto&#34; picks the best available platform-native option. Speech text resolution chain: manifest speech_text → notification template → default template.</dd>
+        
+        <dt>priority</dt><dd>high</dd>
+        
+        <dt>docs_ref</dt><dd>docs/adr/ADR-001-tts-backend-architecture.md</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m5/tts-native" data-depth="2">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge planned">TODO</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">tts-native</span>
+      <span class="node-title">Platform-native TTS backends</span>
+      <div class="progress-container">
+        <div class="progress-fill planned" style="width:0.0%"></div>
+      </div>
+      <span class="progress-text">0%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m5/tts-native</dd>
+        <dt>Status</dt><dd>planned</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>0/0 (0.0%)</dd>
+        
+        <dt>description</dt><dd>First working backend — zero-dependency TTS using OS built-ins. macOS: say command. Windows: System.Speech.Synthesis (SAPI5) via Start-Process (matching win-play.ps1 async pattern). Linux: espeak-ng → piper (BYO) priority chain. Async via background process (nohup/Start-Process). Voice enumeration logic per platform for the voices command.</dd>
+        
+        <dt>priority</dt><dd>high</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;tts-integration&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m5/tts-cli" data-depth="2">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge planned">TODO</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">tts-cli</span>
+      <span class="node-title">TTS CLI commands and configuration</span>
+      <div class="progress-container">
+        <div class="progress-fill planned" style="width:0.0%"></div>
+      </div>
+      <span class="progress-text">0%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m5/tts-cli</dd>
+        <dt>Status</dt><dd>planned</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>0/0 (0.0%)</dd>
+        
+        <dt>description</dt><dd>User-facing controls for TTS. Subcommands: peon tts on/off/status/test/voices/voice/backend. peon tts test speaks a sample phrase with current config (requires a working backend). peon tts voices lists available voices (delegates to platform enumeration from tts-native). peon status --verbose shows TTS state. Shell completions (bash, fish) updated.</dd>
+        
+        <dt>priority</dt><dd>high</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;tts-native&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m5/tts-notifications" data-depth="2">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge planned">TODO</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">tts-notifications</span>
+      <span class="node-title">Spoken notifications and trainer reminders</span>
+      <div class="progress-container">
+        <div class="progress-fill planned" style="width:0.0%"></div>
+      </div>
+      <span class="progress-text">0%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m5/tts-notifications</dd>
+        <dt>Status</dt><dd>planned</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>0/0 (0.0%)</dd>
+        
+        <dt>description</dt><dd>Integrate TTS into the notification and trainer pipelines — the features that benefit most from dynamic speech. Notification templates rendered as spoken text (all 5 categories: stop, error, permission, idle, question). Trainer reminders speak dynamic progress (e.g. &#34;75 of 300 pushups. 50 of 300 squats. 21 percent.&#34;). Trainer slacking lines spoken with harsher tone. Pack manifests gain optional speech_text field per category entry for pack-authored spoken content with template variables.</dd>
+        
+        <dt>priority</dt><dd>medium</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;tts-native&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m5/tts-docs" data-depth="2">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge planned">TODO</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">tts-docs</span>
+      <span class="node-title">TTS documentation</span>
+      <div class="progress-container">
+        <div class="progress-fill planned" style="width:0.0%"></div>
+      </div>
+      <span class="progress-text">0%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m5/tts-docs</dd>
+        <dt>Status</dt><dd>planned</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>0/0 (0.0%)</dd>
+        
+        <dt>description</dt><dd>Complete documentation covering the shipped feature. README.md TTS section (setup, modes, voice selection, troubleshooting). README_zh.md Chinese translation. docs/public/ llms.txt updated. peon help output updated. Pack author guide for speech_text in manifests. Voice quality comparison per platform. Completions already shipped with tts-cli — this covers prose docs only.</dd>
+        
+        <dt>priority</dt><dd>medium</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;tts-cli&#39;, &#39;tts-notifications&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m5/tts-elevenlabs" data-depth="2">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge planned">TODO</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">tts-elevenlabs</span>
+      <span class="node-title">ElevenLabs TTS backend</span>
+      <div class="progress-container">
+        <div class="progress-fill planned" style="width:0.0%"></div>
+      </div>
+      <span class="progress-text">0%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m5/tts-elevenlabs</dd>
+        <dt>Status</dt><dd>planned</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>0/0 (0.0%)</dd>
+        
+        <dt>description</dt><dd>Independent premium backend for users who want high-quality natural voices. User-provided API key stored in config (tts.elevenlabs_api_key or ELEVENLABS_API_KEY env var). Audio caching: text hash → cached MP3 file to minimize API calls and latency. Implements the speak() contract from tts-integration. Ships its own cache management (peon tts cache clear/stats).</dd>
+        
+        <dt>priority</dt><dd>medium</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;tts-cli&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+      
+  <li class="tree-node" data-path="v2/m5/tts-piper" data-depth="2">
+    <div class="node-row">
+      
+      <span class="toggle-spacer"></span>
+      
+      <span class="status-badge planned">TODO</span>
+      <span class="node-level">feature</span>
+      <span class="node-id">tts-piper</span>
+      <span class="node-title">Piper TTS backend (local neural)</span>
+      <div class="progress-container">
+        <div class="progress-fill planned" style="width:0.0%"></div>
+      </div>
+      <span class="progress-text">0%</span>
+    </div>
+    <div class="node-detail" hidden>
+      <dl>
+        <dt>Path</dt><dd>v2/m5/tts-piper</dd>
+        <dt>Status</dt><dd>planned</dd>
+        <dt>Level</dt><dd>feature</dd>
+        <dt>Progress</dt><dd>0/0 (0.0%)</dd>
+        
+        <dt>description</dt><dd>Independent local AI backend for users who want near-cloud quality without network dependency or ongoing cost. BYO install — peon-ping detects installed piper binary and model files, does not manage downloads. Implements the speak() contract from tts-integration. Best-effort Linux support (primary dev/test is Windows and macOS).</dd>
+        
+        <dt>priority</dt><dd>low</dd>
+        
+        <dt>depends_on</dt><dd>[&#39;tts-cli&#39;]</dd>
+        
+      </dl>
+    </div>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+    </ul>
+    
+  </li>
+  
+      
+    </ul>
+  </div>
+  
+
+  <noscript>
+    <p>JavaScript is required for expand/collapse and detail panel interactions.
+    The roadmap tree above shows all top-level nodes.</p>
+  </noscript>
+
+  <script>
+    var NODES_JSON = {"v2": {"children_count": 6, "depth": 0, "descendants_done": 24, "descendants_total": 24, "id": "v2", "level": "version", "metadata": {"description": "Transform peon-ping from a one-size-fits-all sound player into a context-aware personal assistant. Users get the right pack for the right project automatically, richer notification content, and a built-in fitness trainer that leverages the hook event stream.", "start_date": "2026-02-16", "target_completion": "2026-06-30"}, "path": "v2", "progress_pct": 100.0, "status": "done", "title": "v2 \u2014 Personalization \u0026 Intelligence"}, "v2/m0": {"children_count": 2, "depth": 1, "descendants_done": 2, "descendants_total": 2, "id": "m0", "level": "milestone", "metadata": {"description": "Eliminate P0 hook reliability bugs on native Windows that make peon-ping unusable. Async audio playback, state file concurrency safety, and deadlock prevention.", "docs_ref": "docs/adr/proposals/ADR-001-async-audio-and-safe-state-on-windows.md", "success_criteria": ["Windows hooks return within 200ms (excluding PowerShell startup)", "Zero deadlocks under multi-agent sprint dispatch (20+ agents)", "Zero state file corruption under concurrent hook invocations", "Audio plays reliably as fire-and-forget on all Stop/SessionStart events"], "upstream_version": "2.15.1"}, "path": "v2/m0", "progress_pct": 100.0, "status": "done", "title": "Windows hooks never deadlock or lose state"}, "v2/m0/async-audio": {"children_count": 1, "depth": 2, "descendants_done": 1, "descendants_total": 1, "id": "async-audio", "level": "feature", "metadata": {"description": "Replace inline synchronous audio in peon.ps1 with Start-Process delegation to scripts/win-play.ps1 as a detached process. Eliminate MediaPlayer WPF deadlock.", "priority": "critical"}, "path": "v2/m0/async-audio", "progress_pct": 100.0, "status": "done", "title": "Async Audio Playback"}, "v2/m0/async-audio/detach-audio": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "detach-audio", "level": "project", "metadata": {"description": "Remove inline SoundPlayer.PlaySync() and MediaPlayer code from peon.ps1. Use Start-Process -WindowStyle Hidden to spawn win-play.ps1 as fire-and-forget. Add process-level self-timeout (8s safety net).", "docs_ref": "docs/designs/async-audio-and-safe-state-on-windows.md", "sequence": 1}, "path": "v2/m0/async-audio/detach-audio", "progress_pct": 100.0, "status": "done", "title": "Delegate audio to detached win-play.ps1 process"}, "v2/m0/state-concurrency": {"children_count": 1, "depth": 2, "descendants_done": 1, "descendants_total": 1, "id": "state-concurrency", "level": "feature", "metadata": {"depends_on": ["async-audio"], "description": "Add atomic write pattern (write-to-temp + rename) and retry-on-lock-failure to .state.json operations in peon.ps1.", "priority": "high"}, "path": "v2/m0/state-concurrency", "progress_pct": 100.0, "status": "done", "title": "State File Concurrency Safety"}, "v2/m0/state-concurrency/atomic-state": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "atomic-state", "level": "project", "metadata": {"description": "Write .state.json to temp file then rename (atomic on NTFS). Add retry with backoff on read failures. Degrade gracefully to empty defaults if state unavailable.", "sequence": 1}, "path": "v2/m0/state-concurrency/atomic-state", "progress_pct": 100.0, "status": "done", "title": "Atomic state file writes with lock retry"}, "v2/m1": {"children_count": 3, "depth": 1, "descendants_done": 3, "descendants_total": 3, "id": "m1", "level": "milestone", "metadata": {"description": "The right sound pack plays for the right project automatically, without manual per-session overrides. Config naming reflects the actual override hierarchy clearly.", "docs_ref": "docs/plans/2026-02-19-path-rules-design.md", "success_criteria": ["path_rules glob matching selects pack based on cwd", "default_pack replaces misleading active_pack key", "session_override replaces misleading agentskill mode name", "peon update migrates old config keys automatically", "peon status shows active path rule when matched"]}, "path": "v2/m1", "progress_pct": 100.0, "status": "done", "title": "The right pack plays for the right project automatically"}, "v2/m1/config-renames": {"children_count": 1, "depth": 2, "descendants_done": 1, "descendants_total": 1, "id": "config-renames", "level": "feature", "metadata": {"description": "Rename active_pack to default_pack and agentskill rotation mode to session_override. Migration handled in peon update with runtime fallback reading both old and new keys during transition.", "priority": "medium"}, "path": "v2/m1/config-renames", "progress_pct": 100.0, "status": "done", "title": "Config key renames \u2014 active_pack and agentskill cleanup"}, "v2/m1/config-renames/rename-and-migrate": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "rename-and-migrate", "level": "project", "metadata": {"description": "Rename active_pack to default_pack in config.json template. Rename agentskill to session_override. Add migration logic to peon update. Runtime reads new key with old key fallback.", "sequence": 1}, "path": "v2/m1/config-renames/rename-and-migrate", "progress_pct": 100.0, "status": "done", "title": "Rename config keys and add migration"}, "v2/m1/path-rules": {"children_count": 2, "depth": 2, "descendants_done": 2, "descendants_total": 2, "id": "path-rules", "level": "feature", "metadata": {"description": "New path_rules config array that glob-matches cwd to assign sound packs automatically. First match wins. Override hierarchy: session_override \u003e local config \u003e path_rules \u003e pack_rotation \u003e default_pack.", "priority": "high"}, "path": "v2/m1/path-rules", "progress_pct": 100.0, "status": "done", "title": "Path Rules \u2014 Auto-assign packs per project"}, "v2/m1/path-rules/path-rules-matching": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "path-rules-matching", "level": "project", "metadata": {"description": "Add fnmatch-based path_rules evaluation in peon.sh Python block after config load, before rotation/default. First matching rule with an installed pack wins.", "sequence": 1}, "path": "v2/m1/path-rules/path-rules-matching", "progress_pct": 100.0, "status": "done", "title": "Path rules matching logic in Python block"}, "v2/m1/path-rules/path-rules-status": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "path-rules-status", "level": "project", "metadata": {"depends_on": ["path-rules-matching"], "description": "Update peon status to show active path rule when matched. Document path_rules in README, README_zh, help text, and llms.txt.", "sequence": 2}, "path": "v2/m1/path-rules/path-rules-status", "progress_pct": 100.0, "status": "done", "title": "Status output and documentation"}, "v2/m1/windows-cli": {"children_count": 0, "depth": 2, "descendants_done": 0, "descendants_total": 0, "id": "windows-cli", "level": "feature", "metadata": {"description": "peon packs bind/unbind/bindings commands are bash+Python only. Native Windows users have no way to manage path_rules without manually editing config.json. Need PowerShell equivalents in install.ps1 or a standalone peon.cmd wrapper.", "priority": "high"}, "path": "v2/m1/windows-cli", "progress_pct": 0.0, "status": "done", "title": "Path rules CLI on native Windows"}, "v2/m2": {"children_count": 3, "depth": 1, "descendants_done": 12, "descendants_total": 12, "id": "m2", "level": "milestone", "metadata": {"description": "Notifications become informative, actionable, and well-documented. Users see meaningful context in notification messages, can click notifications to focus their IDE, and can easily discover how to control sounds vs popups independently.", "docs_ref": "docs/prds/PRD-001-m2-close-out-smart-notifications.md", "success_criteria": ["Notification messages render user-configured templates with event variables", "Clicking a macOS notification overlay focuses the IDE window (single-window)", "Users can easily discover sounds-without-popups via CLI help and README", "Three independent toggles (sounds, popups, mobile) clearly documented"]}, "path": "v2/m2", "progress_pct": 100.0, "status": "done", "title": "Notifications tell you what happened, not just that something happened"}, "v2/m2/ide-click-to-focus": {"children_count": 4, "depth": 2, "descendants_done": 4, "descendants_total": 4, "id": "ide-click-to-focus", "level": "feature", "metadata": {"description": "Clicking a notification focuses the IDE window. macOS: lsappinfo bundle ID from PID, NSRunningApplication fallback in mac-overlay.js, iTerm2 tab-level focus. Windows: SetForegroundWindow with AttachThreadInput workaround, process-name and PID-based targeting. Both platforms shipped and tested.", "docs_ref": "docs/plans/2026-02-20-ide-click-to-focus-design.md", "priority": "medium"}, "path": "v2/m2/ide-click-to-focus", "progress_pct": 100.0, "status": "done", "title": "IDE Click-to-Focus"}, "v2/m2/ide-click-to-focus/bundle-id-fallback": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "bundle-id-fallback", "level": "project", "metadata": {"description": "Add _mac_bundle_id_from_pid() using lsappinfo. In send_notification(), when bundle_id is empty and ide_pid \u003e 0, derive bundle_id from the PID.", "sequence": 1}, "path": "v2/m2/ide-click-to-focus/bundle-id-fallback", "progress_pct": 100.0, "status": "done", "title": "Bundle ID from PID fallback in peon.sh"}, "v2/m2/ide-click-to-focus/click-to-focus-tests": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "click-to-focus-tests", "level": "project", "metadata": {"depends_on": ["bundle-id-fallback", "overlay-pid-activation"], "description": "Mock lsappinfo returning bundle ID for a given PID. Test _mac_bundle_id_from_pid with pid=0 returns empty. Test overlay ide_pid activation when bundle_id is empty.", "sequence": 2}, "path": "v2/m2/ide-click-to-focus/click-to-focus-tests", "progress_pct": 100.0, "status": "done", "title": "BATS tests for click-to-focus"}, "v2/m2/ide-click-to-focus/overlay-pid-activation": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "overlay-pid-activation", "level": "project", "metadata": {"description": "When bundleId is empty but idePid \u003e 0, use NSRunningApplication.runningApplicationWithProcessIdentifier_() to activate the IDE app.", "sequence": 1}, "path": "v2/m2/ide-click-to-focus/overlay-pid-activation", "progress_pct": 100.0, "status": "done", "title": "PID-based activation in mac-overlay.js"}, "v2/m2/ide-click-to-focus/win-click-to-focus": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "win-click-to-focus", "level": "project", "metadata": {"description": "Toast click activates IDE window via SetForegroundWindow/process name matching in win-notify.ps1. Pester tests in win-click-to-focus.Tests.ps1. Already shipped."}, "path": "v2/m2/ide-click-to-focus/win-click-to-focus", "progress_pct": 100.0, "status": "done", "title": "Windows parity \u2014 click-to-focus via SetForegroundWindow (SHIPPED)"}, "v2/m2/notification-templates": {"children_count": 6, "depth": 2, "descendants_done": 6, "descendants_total": 6, "id": "notification-templates", "level": "feature", "metadata": {"description": "Configurable notification message content with format string templates per event type. Template keys map to CESP categories (stop, permission, error, idle, question). Variables include {project}, {summary}, {tool_name}, {status}, {event}. Defaults to current behavior when no templates configured. Unix and Windows implementations complete.", "docs_ref": "docs/plans/2026-02-24-notification-templates-design.md", "priority": "high"}, "path": "v2/m2/notification-templates", "progress_pct": 100.0, "status": "done", "title": "Notification Message Templates"}, "v2/m2/notification-templates/template-cli": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "template-cli", "level": "project", "metadata": {"depends_on": ["template-engine"], "description": "Add template get/set/reset to peon notifications subcommand. Show templates in peon status. Update help text.", "sequence": 2}, "path": "v2/m2/notification-templates/template-cli", "progress_pct": 100.0, "status": "done", "title": "CLI subcommand \u2014 peon notifications template"}, "v2/m2/notification-templates/template-engine": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "template-engine", "level": "project", "metadata": {"description": "Add notification_templates config key. After per-event msg construction, apply str.format_map() with defaultdict(str) for safe missing-key handling.", "sequence": 1}, "path": "v2/m2/notification-templates/template-engine", "progress_pct": 100.0, "status": "done", "title": "Template resolution engine in Python event parser"}, "v2/m2/notification-templates/template-tests": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "template-tests", "level": "project", "metadata": {"depends_on": ["template-engine"], "description": "Test template resolution with {summary}, {tool_name}, unknown variables rendering as empty, fallback to project name when no template, CLI set/get/reset, and status display.", "sequence": 2}, "path": "v2/m2/notification-templates/template-tests", "progress_pct": 100.0, "status": "done", "title": "BATS tests for notification templates"}, "v2/m2/notification-templates/win-template-cli": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "win-template-cli", "level": "project", "metadata": {"depends_on": ["win-template-engine"], "description": "Port peon notifications template get/set/reset CLI subcommand to peon.ps1. Same UX as Unix. Windows parity.", "docs_ref": "docs/designs/win-notification-templates.md", "sequence": 5}, "path": "v2/m2/notification-templates/win-template-cli", "progress_pct": 100.0, "status": "done", "title": "Windows parity \u2014 template CLI subcommand in peon.ps1"}, "v2/m2/notification-templates/win-template-engine": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "win-template-engine", "level": "project", "metadata": {"description": "Port notification template resolution from peon.sh Python block to PowerShell in peon.ps1. Regex-based variable substitution, same 5 template keys and 5 variables. Windows parity.", "docs_ref": "docs/designs/win-notification-templates.md", "sequence": 4}, "path": "v2/m2/notification-templates/win-template-engine", "progress_pct": 100.0, "status": "done", "title": "Windows parity \u2014 template resolution engine in peon.ps1"}, "v2/m2/notification-templates/win-template-tests": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "win-template-tests", "level": "project", "metadata": {"depends_on": ["win-template-engine", "win-template-cli"], "description": "Pester tests covering template resolution, CLI get/set/reset, unknown variable handling, and fallback behavior. Windows parity.", "docs_ref": "docs/designs/win-notification-templates.md", "sequence": 6}, "path": "v2/m2/notification-templates/win-template-tests", "progress_pct": 100.0, "status": "done", "title": "Windows parity \u2014 Pester tests for notification templates"}, "v2/m2/selective-sound-control": {"children_count": 2, "depth": 2, "descendants_done": 2, "descendants_total": 2, "id": "selective-sound-control", "level": "feature", "metadata": {"description": "Improve discoverability of the existing desktop_notifications feature. No core logic changes \u2014 purely CLI help, verbose status, README sections, skill docs, and llms.txt updates.", "docs_ref": "docs/plans/2026-02-25-selective-sound-control-design.md", "priority": "low"}, "path": "v2/m2/selective-sound-control", "progress_pct": 100.0, "status": "done", "title": "Selective Sound Control \u2014 Documentation \u0026 Discoverability"}, "v2/m2/selective-sound-control/sound-control-docs": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "sound-control-docs", "level": "project", "metadata": {"description": "README English done (Common Use Cases, Independent Controls table). Skills docs done. llms.txt done. README_zh.md still needs translated sections.", "sequence": 1}, "path": "v2/m2/selective-sound-control/sound-control-docs", "progress_pct": 100.0, "status": "done", "title": "README and skill documentation updates"}, "v2/m2/selective-sound-control/verbose-status": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "verbose-status", "level": "project", "metadata": {"description": "Added --verbose flag to peon status showing desktop and mobile notification states with clarifying text. Added peon popups alias for notifications command. Already shipped.", "sequence": 1}, "path": "v2/m2/selective-sound-control/verbose-status", "progress_pct": 100.0, "status": "done", "title": "Add --verbose flag to peon status"}, "v2/m3": {"children_count": 3, "depth": 1, "descendants_done": 7, "descendants_total": 7, "id": "m3", "level": "milestone", "metadata": {"description": "The peon IS your personal trainer. Pavel-style daily exercise mode where the Warcraft peon nags you to do 300 pushups and 300 squats throughout the day, piggybacking on IDE hook events. No daemon, no cron. Windows implementation shipped (peon.ps1 trainer CLI + hook reminders + Pester tests). Unix/peon.sh implementation remains.", "docs_ref": "docs/plans/2026-02-16-trainer-mode-design.md", "success_criteria": ["peon trainer on/off/status/log/goal CLI commands work", "Hook events trigger trainer reminders at configurable intervals", "Daily progress resets at midnight automatically", "Slacking detection fires harsher voice lines when behind pace", "Trainer sounds play after normal hook sounds with delay", "README and help text document trainer mode"]}, "path": "v2/m3", "progress_pct": 100.0, "status": "done", "title": "Your coding sessions keep you physically active"}, "v2/m3/trainer-core": {"children_count": 3, "depth": 2, "descendants_done": 3, "descendants_total": 3, "id": "trainer-core", "level": "feature", "metadata": {"description": "Trainer config section in config.json, state management in .state.json with auto-reset on new day, and CLI subcommands (on/off/status/log/goal) in peon.sh case statement. Trainer sounds directory scaffold with manifest.json. Windows parity already shipped in peon.ps1.", "priority": "high"}, "path": "v2/m3/trainer-core", "progress_pct": 100.0, "status": "done", "title": "Trainer Core \u2014 CLI, state, and config"}, "v2/m3/trainer-core/trainer-cli": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "trainer-cli", "level": "project", "metadata": {"depends_on": ["trainer-scaffold"], "description": "Add trainer) case to peon.sh with Python-backed subcommands for enabling/disabling, showing progress bars, logging reps, and setting goals. TDD with tests/trainer.bats.", "sequence": 2}, "path": "v2/m3/trainer-core/trainer-cli", "progress_pct": 100.0, "status": "done", "title": "CLI subcommands \u2014 on/off/status/log/goal"}, "v2/m3/trainer-core/trainer-scaffold": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "trainer-scaffold", "level": "project", "metadata": {"description": "Create trainer/sounds/{remind,log,complete,slacking}/ directories, manifest.json with placeholder entries, and add trainer section to config.json defaults.", "sequence": 1}, "path": "v2/m3/trainer-core/trainer-scaffold", "progress_pct": 100.0, "status": "done", "title": "Directory scaffold and config defaults"}, "v2/m3/trainer-core/win-trainer-cli": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "win-trainer-cli", "level": "project", "metadata": {"description": "peon train on/off/status/log/goal subcommands in peon.ps1 with state management. Pester tests in trainer-windows.Tests.ps1. Already shipped."}, "path": "v2/m3/trainer-core/win-trainer-cli", "progress_pct": 100.0, "status": "done", "title": "Windows parity \u2014 trainer CLI and state management (SHIPPED)"}, "v2/m3/trainer-docs": {"children_count": 1, "depth": 2, "descendants_done": 1, "descendants_total": 1, "id": "trainer-docs", "level": "feature", "metadata": {"depends_on": ["trainer-core", "trainer-reminders"], "description": "Add trainer section to README, README_zh, help text, completions, and llms.txt. Document CLI commands, custom voice lines directory, and configuration.", "priority": "medium"}, "path": "v2/m3/trainer-docs", "progress_pct": 100.0, "status": "done", "title": "Trainer Documentation"}, "v2/m3/trainer-docs/trainer-docs-all": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "trainer-docs-all", "level": "project", "metadata": {"description": "Add trainer to peon help output. Add Trainer Mode section to README and README_zh. Update completions.bash and completions.fish. Update llms.txt.", "sequence": 1}, "path": "v2/m3/trainer-docs/trainer-docs-all", "progress_pct": 100.0, "status": "done", "title": "Help text, README, and completions updates"}, "v2/m3/trainer-reminders": {"children_count": 3, "depth": 2, "descendants_done": 3, "descendants_total": 3, "id": "trainer-reminders", "level": "feature", "metadata": {"depends_on": ["trainer-core"], "description": "On each hook event, after normal sound routing, check trainer config/state and optionally play a second sound for trainer reminder. Pace-based slacking detection. Skip on SessionStart to avoid stacking. Windows parity already shipped in peon.ps1.", "priority": "high"}, "path": "v2/m3/trainer-reminders", "progress_pct": 100.0, "status": "done", "title": "Trainer Reminders \u2014 Hook event integration"}, "v2/m3/trainer-reminders/reminder-logic": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "reminder-logic", "level": "project", "metadata": {"description": "After main sound selection, check trainer enabled, date reset, interval elapsed, and pace. Pick from trainer.remind or trainer.slacking manifest categories. Output TRAINER_SOUND, TRAINER_VOL, TRAINER_MSG variables.", "sequence": 1}, "path": "v2/m3/trainer-reminders/reminder-logic", "progress_pct": 100.0, "status": "done", "title": "Reminder logic in Python hook block"}, "v2/m3/trainer-reminders/reminder-playback": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "reminder-playback", "level": "project", "metadata": {"depends_on": ["reminder-logic"], "description": "After main sound playback, if TRAINER_SOUND is set, play with 1s delay. Desktop notification with progress summary. Synchronous in test mode.", "sequence": 2}, "path": "v2/m3/trainer-reminders/reminder-playback", "progress_pct": 100.0, "status": "done", "title": "Delayed trainer sound playback in shell"}, "v2/m3/trainer-reminders/win-trainer-reminders": {"children_count": 0, "depth": 3, "descendants_done": 1, "descendants_total": 1, "id": "win-trainer-reminders", "level": "project", "metadata": {"description": "Trainer reminder logic in peon.ps1 hook path. Fires after main sound with delay. Pester coverage in trainer-windows.Tests.ps1. Already shipped."}, "path": "v2/m3/trainer-reminders/win-trainer-reminders", "progress_pct": 100.0, "status": "done", "title": "Windows parity \u2014 hook-time trainer reminders (SHIPPED)"}, "v2/m4": {"children_count": 3, "depth": 1, "descendants_done": 0, "descendants_total": 0, "id": "m4", "level": "milestone", "metadata": {"description": "Structured observability for hook execution. Configurable debug logging with phase timing, decision tracing, and daily log rotation. Users can diagnose timeout, config, pack, and audio failures from log output alone \u2014 no source reading required.", "docs_ref": "docs/designs/structured-hook-logging.md", "sprint_tag": "HOOKLOG", "success_criteria": ["debug config key enables structured logging with zero overhead when disabled", "Log entries cover all decision phases: event routing, config load, pack selection, sound pick, playback, notification", "peon debug on/off and peon logs CLI commands work on all platforms", "Daily log rotation with configurable retention (default 7 days)", "Worktree-safe concurrent append logging with session/cwd correlation"]}, "path": "v2/m4", "progress_pct": 0.0, "status": "done", "title": "When something breaks, you can see why"}, "v2/m4/hook-logging-cli": {"children_count": 0, "depth": 2, "descendants_done": 0, "descendants_total": 0, "id": "hook-logging-cli", "level": "feature", "metadata": {"description": "Add peon debug on|off|status and peon logs [--last N] [--session ID] [--clear] CLI commands to both peon.sh and peon.ps1. Update shell completions (completions.bash, completions.fish). Users can toggle logging and read/filter log files without editing config files or knowing log directory paths. Windows parity via peon.cmd delegation to peon.ps1.", "docs_ref": "docs/designs/structured-hook-logging.md"}, "path": "v2/m4/hook-logging-cli", "progress_pct": 0.0, "status": "done", "title": "CLI commands for debug toggle and log reading"}, "v2/m4/hook-logging-core": {"children_count": 0, "depth": 2, "descendants_done": 0, "descendants_total": 0, "id": "hook-logging-core", "level": "feature", "metadata": {"description": "Add inline phase-emitting log calls to both peon.sh (Python block) and peon.ps1 (PowerShell). Implements debug and debug_retention_days config keys, daily-rotated log files under $PEON_DIR/logs/, invocation ID correlation, and PEON_DEBUG=1 env var override. Covers all decision phases: [hook], [config], [state], [route], [sound], [play], [notify], [trainer], [exit]. Zero overhead when disabled (no-op lambda/scriptblock). Cross-platform test fixtures prevent format drift between Python and PowerShell implementations.", "docs_ref": "docs/designs/structured-hook-logging.md"}, "path": "v2/m4/hook-logging-core", "progress_pct": 0.0, "status": "done", "title": "Core structured logging in hook scripts"}, "v2/m4/hook-logging-docs": {"children_count": 0, "depth": 2, "descendants_done": 0, "descendants_total": 0, "id": "hook-logging-docs", "level": "feature", "metadata": {"description": "Add Debugging section to README.md with examples of diagnosing the 5 common failure modes from log output. Translate to README_zh.md. Update docs/public/llms.txt. Update peon help output with debug/logs commands. Update peon status --verbose to show debug logging state. Troubleshooting guide with common failure patterns.", "docs_ref": "docs/designs/structured-hook-logging.md"}, "path": "v2/m4/hook-logging-docs", "progress_pct": 0.0, "status": "done", "title": "Documentation and discoverability for hook logging"}, "v2/m5": {"children_count": 7, "depth": 1, "descendants_done": 0, "descendants_total": 0, "id": "m5", "level": "milestone", "metadata": {"description": "peon-ping gains a voice \u2014 hook events, notifications, and trainer reminders can be spoken aloud with dynamic content that static audio files cannot provide. A universal integration layer defines the speak() contract and config schema. Each TTS backend (platform-native, ElevenLabs, Piper, etc.) ships as its own independent feature implementing that contract \u2014 no generic multi-provider abstraction layers.", "docs_ref": "docs/prds/PRD-003-tts-spoken-feedback.md", "success_criteria": ["Hook events can trigger spoken output in addition to or instead of sound files", "TTS backend is pluggable \u2014 new engines can be added without changing the integration layer", "Platform-native TTS works out of the box with zero setup on macOS, Windows, and Linux", "Dynamic content (project name, event summary, trainer progress) can be spoken", "TTS playback is async and does not block hook return", "peon tts CLI commands for toggling, testing, and configuring", "Pack manifests can define spoken text per category as alternative or supplement to audio"]}, "path": "v2/m5", "progress_pct": 0.0, "status": "planned", "title": "The peon speaks to you"}, "v2/m5/tts-cli": {"children_count": 0, "depth": 2, "descendants_done": 0, "descendants_total": 0, "id": "tts-cli", "level": "feature", "metadata": {"depends_on": ["tts-native"], "description": "User-facing controls for TTS. Subcommands: peon tts on/off/status/test/voices/voice/backend. peon tts test speaks a sample phrase with current config (requires a working backend). peon tts voices lists available voices (delegates to platform enumeration from tts-native). peon status --verbose shows TTS state. Shell completions (bash, fish) updated.", "priority": "high"}, "path": "v2/m5/tts-cli", "progress_pct": 0.0, "status": "planned", "title": "TTS CLI commands and configuration"}, "v2/m5/tts-docs": {"children_count": 0, "depth": 2, "descendants_done": 0, "descendants_total": 0, "id": "tts-docs", "level": "feature", "metadata": {"depends_on": ["tts-cli", "tts-notifications"], "description": "Complete documentation covering the shipped feature. README.md TTS section (setup, modes, voice selection, troubleshooting). README_zh.md Chinese translation. docs/public/ llms.txt updated. peon help output updated. Pack author guide for speech_text in manifests. Voice quality comparison per platform. Completions already shipped with tts-cli \u2014 this covers prose docs only.", "priority": "medium"}, "path": "v2/m5/tts-docs", "progress_pct": 0.0, "status": "planned", "title": "TTS documentation"}, "v2/m5/tts-elevenlabs": {"children_count": 0, "depth": 2, "descendants_done": 0, "descendants_total": 0, "id": "tts-elevenlabs", "level": "feature", "metadata": {"depends_on": ["tts-cli"], "description": "Independent premium backend for users who want high-quality natural voices. User-provided API key stored in config (tts.elevenlabs_api_key or ELEVENLABS_API_KEY env var). Audio caching: text hash \u2192 cached MP3 file to minimize API calls and latency. Implements the speak() contract from tts-integration. Ships its own cache management (peon tts cache clear/stats).", "priority": "medium"}, "path": "v2/m5/tts-elevenlabs", "progress_pct": 0.0, "status": "planned", "title": "ElevenLabs TTS backend"}, "v2/m5/tts-integration": {"children_count": 0, "depth": 2, "descendants_done": 0, "descendants_total": 0, "id": "tts-integration", "level": "feature", "metadata": {"description": "The foundation everything else builds on. Define the backend interface: speak(text, voice, rate, volume) \u2192 async fire-and-forget. Add tts section to config.json (enabled, backend, voice, rate, volume, mode). Hook pipeline calls the integration layer after sound selection when TTS is enabled. Backend resolution: config.tts.backend selects engine, \"auto\" picks the best available platform-native option. Speech text resolution chain: manifest speech_text \u2192 notification template \u2192 default template.", "docs_ref": "docs/adr/ADR-001-tts-backend-architecture.md", "priority": "high"}, "path": "v2/m5/tts-integration", "progress_pct": 0.0, "status": "planned", "title": "TTS integration layer and backend contract"}, "v2/m5/tts-native": {"children_count": 0, "depth": 2, "descendants_done": 0, "descendants_total": 0, "id": "tts-native", "level": "feature", "metadata": {"depends_on": ["tts-integration"], "description": "First working backend \u2014 zero-dependency TTS using OS built-ins. macOS: say command. Windows: System.Speech.Synthesis (SAPI5) via Start-Process (matching win-play.ps1 async pattern). Linux: espeak-ng \u2192 piper (BYO) priority chain. Async via background process (nohup/Start-Process). Voice enumeration logic per platform for the voices command.", "priority": "high"}, "path": "v2/m5/tts-native", "progress_pct": 0.0, "status": "planned", "title": "Platform-native TTS backends"}, "v2/m5/tts-notifications": {"children_count": 0, "depth": 2, "descendants_done": 0, "descendants_total": 0, "id": "tts-notifications", "level": "feature", "metadata": {"depends_on": ["tts-native"], "description": "Integrate TTS into the notification and trainer pipelines \u2014 the features that benefit most from dynamic speech. Notification templates rendered as spoken text (all 5 categories: stop, error, permission, idle, question). Trainer reminders speak dynamic progress (e.g. \"75 of 300 pushups. 50 of 300 squats. 21 percent.\"). Trainer slacking lines spoken with harsher tone. Pack manifests gain optional speech_text field per category entry for pack-authored spoken content with template variables.", "priority": "medium"}, "path": "v2/m5/tts-notifications", "progress_pct": 0.0, "status": "planned", "title": "Spoken notifications and trainer reminders"}, "v2/m5/tts-piper": {"children_count": 0, "depth": 2, "descendants_done": 0, "descendants_total": 0, "id": "tts-piper", "level": "feature", "metadata": {"depends_on": ["tts-cli"], "description": "Independent local AI backend for users who want near-cloud quality without network dependency or ongoing cost. BYO install \u2014 peon-ping detects installed piper binary and model files, does not manage downloads. Implements the speak() contract from tts-integration. Best-effort Linux support (primary dev/test is Windows and macOS).", "priority": "low"}, "path": "v2/m5/tts-piper", "progress_pct": 0.0, "status": "planned", "title": "Piper TTS backend (local neural)"}};
+    (function() {
+      var STORAGE_KEY = "gitban-roadmap-peon-ping-";
+
+      // --- localStorage helpers (Safari file:// safe) ---
+      function loadState() {
+        try {
+          var raw = localStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : {};
+        } catch(e) {
+          return {};
+        }
+      }
+
+      function saveState(state) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch(e) { /* ignore */ }
+      }
+
+      var expansionState = loadState();
+
+      // --- Expand / Collapse ---
+      function setExpanded(nodeEl, expanded) {
+        var path = nodeEl.getAttribute("data-path");
+        var children = nodeEl.querySelector(":scope > .tree-children");
+        var btn = nodeEl.querySelector(":scope > .node-row > .toggle-btn");
+        if (!children) return;
+
+        if (expanded) {
+          children.classList.add("expanded");
+          if (btn) btn.classList.add("expanded");
+          expansionState[path] = true;
+        } else {
+          children.classList.remove("expanded");
+          if (btn) btn.classList.remove("expanded");
+          delete expansionState[path];
+        }
+        saveState(expansionState);
+      }
+
+      function toggleNode(nodeEl) {
+        var children = nodeEl.querySelector(":scope > .tree-children");
+        if (!children) return;
+        var isExpanded = children.classList.contains("expanded");
+        setExpanded(nodeEl, !isExpanded);
+      }
+
+      // --- Detail panels ---
+      function toggleDetail(nodeEl) {
+        var detail = nodeEl.querySelector(":scope > .node-detail");
+        if (detail) {
+          detail.hidden = !detail.hidden;
+        }
+      }
+
+      // --- Event delegation ---
+      document.addEventListener("click", function(e) {
+        var toggleBtn = e.target.closest(".toggle-btn");
+        if (toggleBtn) {
+          e.stopPropagation();
+          var nodeEl = toggleBtn.closest(".tree-node");
+          if (nodeEl) toggleNode(nodeEl);
+          return;
+        }
+
+        var nodeRow = e.target.closest(".node-row");
+        if (nodeRow) {
+          var nodeEl = nodeRow.closest(".tree-node");
+          if (nodeEl) toggleDetail(nodeEl);
+          return;
+        }
+      });
+
+      // --- Restore expansion state on load ---
+      // Default: version-level (depth 0) expanded, others collapsed
+      var allNodes = document.querySelectorAll(".tree-node");
+      allNodes.forEach(function(nodeEl) {
+        var path = nodeEl.getAttribute("data-path");
+        var depth = parseInt(nodeEl.getAttribute("data-depth"), 10);
+        var children = nodeEl.querySelector(":scope > .tree-children");
+        if (!children) return;
+
+        var shouldExpand;
+        if (path in expansionState) {
+          shouldExpand = expansionState[path];
+        } else {
+          // Default: expand first level (versions)
+          shouldExpand = (depth === 0);
+        }
+        if (shouldExpand) {
+          setExpanded(nodeEl, true);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

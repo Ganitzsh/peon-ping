@@ -1,0 +1,41 @@
+{"ts":"2026-03-27T23:42:30Z","tool":"Bash","input":{"command":"cd C:/Users/Cameron/Projects/peon-ping && gh pr view 405 --json isDraft,state,title --jq '{draft: .isDraft, state: .state, title: .title}'","timeout":"15000","description":"Check PR 405 status"}}
+{"ts":"2026-03-27T23:45:14Z","tool":"Skill","input":{"skill":"roadmap-navigator","args":"what's next"}}
+{"ts":"2026-03-27T23:45:19Z","tool":"ToolSearch","input":{"query":"select:mcp__gitban__list_roadmap","max_results":"1"}}
+{"ts":"2026-03-27T23:45:24Z","tool":"mcp__gitban__list_roadmap","input":{}}
+{"ts":"2026-03-27T23:45:29Z","tool":"mcp__gitban__list_roadmap","input":{"path":"v2"}}
+{"ts":"2026-03-27T23:45:34Z","tool":"mcp__gitban__list_roadmap","input":{"path":"v2/m3","include_fields":"['description']"}}
+{"ts":"2026-03-27T23:45:35Z","tool":"mcp__gitban__list_roadmap","input":{"path":"v2/m4","include_fields":"['description']"}}
+{"ts":"2026-03-27T23:46:46Z","tool":"ToolSearch","input":{"query":"select:mcp__gitban__render_board,mcp__gitban__list_archive","max_results":"2"}}
+{"ts":"2026-03-27T23:46:49Z","tool":"mcp__gitban__render_board","input":{"format":"console"}}
+{"ts":"2026-03-27T23:46:50Z","tool":"mcp__gitban__list_archive","input":{"include_metrics":"True"}}
+{"ts":"2026-03-27T23:46:51Z","tool":"Bash","input":{"command":"git branch --list 'sprint/*' | head -20","description":"List sprint branches"}}
+{"ts":"2026-03-27T23:50:06Z","tool":"Agent","input":{"description":"Audit m3 Trainer work done","prompt":"Thoroughness: very thorough\n\nI need to audit what work has been completed for the \"Peon Trainer\" feature (roadmap milestone v2/m3). Check:\n\n1. Read all archived sprint cards related to trainer/WINTRAI...","subagent_type":"Explore"}}
+{"ts":"2026-03-27T23:50:12Z","tool":"Agent","input":{"description":"Audit m4 Hook Logging work","prompt":"Thoroughness: very thorough\n\nI need to audit what work has been completed for the \"Hook Logging\" feature (roadmap milestone v2/m4). Check:\n\n1. Read all archived sprint cards related to HOOKLOG:\n   - ....","subagent_type":"Explore"}}
+{"ts":"2026-03-27T23:50:19Z","tool":"Agent","input":{"description":"Audit m0 m1 m2 status","prompt":"Thoroughness: medium\n\nThe roadmap shows these milestones as \"done\": m0 (Windows reliability), m1 (Smart Packs), m2 (Notifications). I need to quickly verify these are truly complete by checking the ro...","subagent_type":"Explore"}}
+{"ts":"2026-03-27T23:52:56Z","tool":"ToolSearch","input":{"query":"select:mcp__gitban__upsert_roadmap","max_results":"1"}}
+{"ts":"2026-03-27T23:53:00Z","tool":"mcp__gitban__list_roadmap","input":{"path":"v2/m3/trainer-core"}}
+{"ts":"2026-03-27T23:53:00Z","tool":"mcp__gitban__list_roadmap","input":{"path":"v2/m3/trainer-reminders"}}
+{"ts":"2026-03-27T23:53:01Z","tool":"mcp__gitban__list_roadmap","input":{"path":"v2/m3/trainer-docs"}}
+{"ts":"2026-03-27T23:53:06Z","tool":"mcp__gitban__upsert_roadmap","input":{"content":"{'status': 'done'}","path":"v2/m3/trainer-core/trainer-scaffold"}}
+{"ts":"2026-03-27T23:53:07Z","tool":"mcp__gitban__upsert_roadmap","input":{"content":"{'status': 'done'}","path":"v2/m3/trainer-core/trainer-cli"}}
+{"ts":"2026-03-27T23:53:08Z","tool":"mcp__gitban__upsert_roadmap","input":{"content":"{'status': 'done'}","path":"v2/m3/trainer-reminders/reminder-logic"}}
+{"ts":"2026-03-27T23:53:08Z","tool":"mcp__gitban__upsert_roadmap","input":{"content":"{'status': 'done'}","path":"v2/m3/trainer-reminders/reminder-playback"}}
+{"ts":"2026-03-27T23:53:09Z","tool":"mcp__gitban__upsert_roadmap","input":{"content":"{'status': 'done'}","path":"v2/m3/trainer-docs/trainer-docs-all"}}
+{"ts":"2026-03-27T23:53:10Z","tool":"mcp__gitban__upsert_roadmap","input":{"content":"{'status': 'done'}","path":"v2/m3/trainer-core"}}
+{"ts":"2026-03-27T23:53:11Z","tool":"mcp__gitban__upsert_roadmap","input":{"content":"{'status': 'done'}","path":"v2/m3/trainer-reminders"}}
+{"ts":"2026-03-27T23:53:11Z","tool":"mcp__gitban__upsert_roadmap","input":{"content":"{'status': 'done'}","path":"v2/m3/trainer-docs"}}
+{"ts":"2026-03-27T23:53:12Z","tool":"mcp__gitban__upsert_roadmap","input":{"content":"{'status': 'done'}","path":"v2/m3"}}
+{"ts":"2026-03-27T23:53:13Z","tool":"mcp__gitban__upsert_roadmap","input":{"content":"{'status': 'done'}","path":"v2/m4/hook-logging-core"}}
+{"ts":"2026-03-27T23:53:13Z","tool":"mcp__gitban__upsert_roadmap","input":{"content":"{'status': 'done'}","path":"v2/m4/hook-logging-cli"}}
+{"ts":"2026-03-27T23:53:14Z","tool":"mcp__gitban__upsert_roadmap","input":{"content":"{'status': 'done'}","path":"v2/m4/hook-logging-docs"}}
+{"ts":"2026-03-27T23:53:15Z","tool":"mcp__gitban__upsert_roadmap","input":{"content":"{'status': 'done'}","path":"v2/m4"}}
+{"ts":"2026-03-27T23:53:19Z","tool":"mcp__gitban__list_roadmap","input":{"path":"v2"}}
+{"ts":"2026-03-27T23:53:23Z","tool":"mcp__gitban__upsert_roadmap","input":{"content":"{'status': 'done'}","path":"v2"}}
+{"ts":"2026-03-27T23:56:18Z","tool":"Glob","input":{"pattern":"plans/**/*"}}
+{"ts":"2026-03-27T23:56:23Z","tool":"Glob","input":{"pattern":"docs/prds/**/*"}}
+{"ts":"2026-03-27T23:56:23Z","tool":"Glob","input":{"pattern":"docs/adr/**/*"}}
+{"ts":"2026-03-27T23:56:23Z","tool":"Glob","input":{"pattern":"docs/designs/**/*"}}
+{"ts":"2026-03-27T23:56:28Z","tool":"Read","input":{"file_path":"C:\\Users\\Cameron\\Projects\\peon-ping\\plans\\2026-02-18-peon-avatar-desktop.md"}}
+{"ts":"2026-03-27T23:56:28Z","tool":"Read","input":{"file_path":"C:\\Users\\Cameron\\Projects\\peon-ping\\plans\\2026-02-12-antigravity-adapter.md"}}
+{"ts":"2026-03-27T23:56:34Z","tool":"Read","input":{"file_path":"C:\\Users\\Cameron\\Projects\\peon-ping\\plans\\2026-02-18-peon-avatar-desktop.md","limit":"80"}}
+{"ts":"2026-03-27T23:56:38Z","tool":"Glob","input":{"pattern":"adapters/antigravity*"}}

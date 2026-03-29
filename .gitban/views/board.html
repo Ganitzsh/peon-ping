@@ -1,0 +1,1003 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>peon-ping — Board</title>
+  <style>
+    /* CSS Custom Properties — reusable by roadmap template (step 2) */
+    :root {
+      /* Backgrounds */
+      --bg-page: #1a1a2e;
+      --bg-surface: #16213e;
+      --bg-card: #1f2b47;
+      --bg-hover: #253353;
+
+      /* Text */
+      --text-primary: #e0e0e0;
+      --text-secondary: #a0a0b0;
+      --text-muted: #606070;
+
+      /* Status */
+      --status-done: #4caf50;
+      --status-active: #2196f3;
+      --status-blocked: #f44336;
+      --status-todo: #78909c;
+      --status-backlog: #546e7a;
+
+      /* Priority */
+      --priority-p0: #f44336;
+      --priority-p1: #ffc107;
+      --priority-p2: #78909c;
+
+      /* Layout */
+      --column-gap: 12px;
+      --card-padding: 8px 12px;
+      --radius: 6px;
+      --transition: 0.15s ease;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      line-height: 1.5;
+      padding: 16px;
+    }
+
+    header {
+      margin-bottom: 16px;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .meta {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+
+    /* Filters */
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .filter-label {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-right: 2px;
+    }
+
+    .filter-sep {
+      width: 1px;
+      height: 20px;
+      background: var(--text-muted);
+      margin: 0 8px;
+      opacity: 0.3;
+    }
+
+    .chip {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--text-muted);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition), border-color var(--transition);
+      user-select: none;
+    }
+
+    .chip:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .chip.active {
+      background: var(--status-active);
+      color: #fff;
+      border-color: var(--status-active);
+    }
+
+    .clear-filters {
+      display: none;
+      padding: 2px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--status-blocked);
+      background: transparent;
+      color: var(--status-blocked);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+
+    .clear-filters:hover {
+      background: var(--status-blocked);
+      color: #fff;
+    }
+
+    /* Board layout */
+    .board {
+      display: flex;
+      gap: var(--column-gap);
+      overflow-x: auto;
+      min-height: 200px;
+    }
+
+    .column {
+      flex: 1;
+      min-width: 220px;
+      background: var(--bg-surface);
+      border-radius: var(--radius);
+      padding: 10px;
+    }
+
+    .column-header {
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--text-muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .column-header .count {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .column[data-status="done"] .column-header {
+      color: var(--status-done);
+      border-bottom-color: var(--status-done);
+    }
+
+    .column[data-status="blocked"] .column-header {
+      color: var(--status-blocked);
+      border-bottom-color: var(--status-blocked);
+    }
+
+    .column[data-status="in_progress"] .column-header {
+      color: var(--status-active);
+      border-bottom-color: var(--status-active);
+    }
+
+    .done-toggle {
+      font-size: 0.75rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      border: none;
+      background: none;
+      text-decoration: underline;
+    }
+
+    .done-toggle:hover {
+      color: var(--text-primary);
+    }
+
+    .done-cards {
+      /* Done column cards hidden by default */
+    }
+
+    .done-cards.collapsed {
+      display: none;
+    }
+
+    /* Card */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      margin-bottom: 6px;
+      transition: opacity var(--transition);
+    }
+
+    .card[data-filtered="true"] {
+      opacity: 0.15;
+      pointer-events: none;
+    }
+
+    .card-token {
+      padding: var(--card-padding);
+      cursor: pointer;
+      display: flex;
+      gap: 6px;
+      align-items: baseline;
+      font-size: 0.85rem;
+    }
+
+    .card-token:hover {
+      background: var(--bg-hover);
+      border-radius: var(--radius);
+    }
+
+    .priority {
+      font-weight: 700;
+      font-size: 0.75rem;
+      min-width: 22px;
+    }
+
+    .priority.p0 { color: var(--priority-p0); }
+    .priority.p1 { color: var(--priority-p1); }
+    .priority.p2 { color: var(--priority-p2); }
+
+    .type {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      min-width: 40px;
+    }
+
+    .card-id {
+      color: var(--text-secondary);
+      font-family: monospace;
+      font-size: 0.8rem;
+    }
+
+    .card-title {
+      color: var(--text-primary);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .card-detail {
+      padding: 8px 12px 12px;
+      border-top: 1px solid var(--bg-hover);
+      font-size: 0.8rem;
+    }
+
+    .card-detail dl {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 12px;
+    }
+
+    .card-detail dt {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .card-detail dd {
+      color: var(--text-secondary);
+    }
+
+    /* Stats sidebar */
+    .stats {
+      margin-top: 20px;
+      padding: 12px;
+      background: var(--bg-surface);
+      border-radius: var(--radius);
+      font-size: 0.8rem;
+    }
+
+    .stats h2 {
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .stat-group {
+      margin-bottom: 12px;
+    }
+
+    .stat-group h3 {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+    }
+
+    .stat-label { color: var(--text-secondary); }
+    .stat-value { color: var(--text-primary); font-weight: 600; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    noscript {
+      display: block;
+      margin-top: 16px;
+      padding: 12px;
+      background: var(--bg-surface);
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>peon-ping</h1>
+    <span class="meta">16 cards &middot; 2026-03-29T01:49:27.292312+00:00</span>
+  </header>
+
+  
+  <div class="filters">
+    
+    <span class="filter-label">Status</span>
+    <div class="filter-group">
+      
+      <button class="chip" data-dim="status" data-val="backlog">backlog (6)</button>
+      
+      <button class="chip" data-dim="status" data-val="done">done (4)</button>
+      
+      <button class="chip" data-dim="status" data-val="in_progress">in_progress (1)</button>
+      
+      <button class="chip" data-dim="status" data-val="todo">todo (5)</button>
+      
+    </div>
+    
+
+    
+    <span class="filter-sep"></span>
+    <span class="filter-label">Priority</span>
+    <div class="filter-group">
+      
+      <button class="chip" data-dim="priority" data-val="P1">P1 (7)</button>
+      
+      <button class="chip" data-dim="priority" data-val="P2">P2 (9)</button>
+      
+    </div>
+    
+
+    
+    <span class="filter-sep"></span>
+    <span class="filter-label">Type</span>
+    <div class="filter-group">
+      
+      <button class="chip" data-dim="type" data-val="chore">chore (5)</button>
+      
+      <button class="chip" data-dim="type" data-val="feature">feature (7)</button>
+      
+      <button class="chip" data-dim="type" data-val="refactor">refactor (2)</button>
+      
+      <button class="chip" data-dim="type" data-val="test">test (2)</button>
+      
+    </div>
+    
+
+    
+    <span class="filter-sep"></span>
+    <span class="filter-label">Handle</span>
+    <div class="filter-group">
+      
+      <button class="chip" data-dim="handle" data-val="CAMERON">CAMERON (3)</button>
+      
+    </div>
+    
+
+    
+    <span class="filter-sep"></span>
+    <span class="filter-label">Sprint</span>
+    <div class="filter-group">
+      
+      <button class="chip" data-dim="sprint" data-val="TTSINTEG">TTSINTEG (5)</button>
+      
+      <button class="chip" data-dim="sprint" data-val="WINFOCUS">WINFOCUS (1)</button>
+      
+      <button class="chip" data-dim="sprint" data-val="WINTEST">WINTEST (3)</button>
+      
+      <button class="chip" data-dim="sprint" data-val="WINTRAIN">WINTRAIN (5)</button>
+      
+    </div>
+    
+
+    <button class="clear-filters" id="clear-filters-btn">Clear all</button>
+  </div>
+
+  <div class="board">
+    
+    <div class="column" data-status="backlog">
+      <div class="column-header">
+        <span>BACKLOG <span class="count">(6)</span></span>
+        
+      </div>
+      <div class="">
+        
+        <div class="card"
+             data-status="backlog"
+             data-priority="P2"
+             data-type="chore"
+             data-handle=""
+             data-sprint="">
+          <div class="card-token">
+            <span class="priority p2">P2</span>
+            <span class="type">chore</span>
+            <span class="card-id">26yooi</span>
+            <span class="card-title">upgrade-write-stateatomic-to-true-atomic-overwrite-when-ps-5-1-is-dropped</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>upgrade-write-stateatomic-to-true-atomic-overwrite-when-ps-5-1-is-dropped</dd>
+              <dt>Handle</dt><dd>unassigned</dd>
+              <dt>Sprint</dt><dd>—</dd>
+              <dt>File</dt><dd>backlog-P2-chore-upgrade-write-stateatomic-to-true-atomic-overwrite-when-ps-5-1-is-dropped-26yooi.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+        <div class="card"
+             data-status="backlog"
+             data-priority="P2"
+             data-type="chore"
+             data-handle=""
+             data-sprint="WINTRAIN">
+          <div class="card-token">
+            <span class="priority p2">P2</span>
+            <span class="type">chore</span>
+            <span class="card-id">n4420w</span>
+            <span class="card-title">consolidate-peon-ps1-write-stateatomic-to-single-end-of-hook-flush</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>consolidate-peon-ps1-write-stateatomic-to-single-end-of-hook-flush</dd>
+              <dt>Handle</dt><dd>unassigned</dd>
+              <dt>Sprint</dt><dd>WINTRAIN</dd>
+              <dt>File</dt><dd>WINTRAIN-backlog-P2-chore-consolidate-peon-ps1-write-stateatomic-to-single-end-of-hook-flush-n4420w.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+        <div class="card"
+             data-status="backlog"
+             data-priority="P2"
+             data-type="refactor"
+             data-handle=""
+             data-sprint="WINTRAIN">
+          <div class="card-token">
+            <span class="priority p2">P2</span>
+            <span class="type">refac</span>
+            <span class="card-id">zolklp</span>
+            <span class="card-title">extract-format-trainerbar-helper-to-deduplicate-progress-bar-rendering</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>extract-format-trainerbar-helper-to-deduplicate-progress-bar-rendering</dd>
+              <dt>Handle</dt><dd>unassigned</dd>
+              <dt>Sprint</dt><dd>WINTRAIN</dd>
+              <dt>File</dt><dd>WINTRAIN-backlog-P2-refactor-extract-format-trainerbar-helper-to-deduplicate-progress-bar-rendering-zolklp.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+        <div class="card"
+             data-status="backlog"
+             data-priority="P2"
+             data-type="refactor"
+             data-handle=""
+             data-sprint="WINTRAIN">
+          <div class="card-token">
+            <span class="priority p2">P2</span>
+            <span class="type">refac</span>
+            <span class="card-id">9vcj7n</span>
+            <span class="card-title">harden-pester-test-helper-argument-handling</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>harden-pester-test-helper-argument-handling</dd>
+              <dt>Handle</dt><dd>unassigned</dd>
+              <dt>Sprint</dt><dd>WINTRAIN</dd>
+              <dt>File</dt><dd>WINTRAIN-backlog-P2-refactor-harden-pester-test-helper-argument-handling-9vcj7n.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+        <div class="card"
+             data-status="backlog"
+             data-priority="P2"
+             data-type="test"
+             data-handle=""
+             data-sprint="WINTRAIN">
+          <div class="card-token">
+            <span class="priority p2">P2</span>
+            <span class="type">test</span>
+            <span class="card-id">t276tx</span>
+            <span class="card-title">add-pester-tests-for-trainer-cli-subcommands</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>add-pester-tests-for-trainer-cli-subcommands</dd>
+              <dt>Handle</dt><dd>unassigned</dd>
+              <dt>Sprint</dt><dd>WINTRAIN</dd>
+              <dt>File</dt><dd>WINTRAIN-backlog-P2-test-add-pester-tests-for-trainer-cli-subcommands-t276tx.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+        <div class="card"
+             data-status="backlog"
+             data-priority="P2"
+             data-type="test"
+             data-handle=""
+             data-sprint="WINTRAIN">
+          <div class="card-token">
+            <span class="priority p2">P2</span>
+            <span class="type">test</span>
+            <span class="card-id">44fnwj</span>
+            <span class="card-title">add-pester-tests-for-trainer-hook-reminder-logic</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>add-pester-tests-for-trainer-hook-reminder-logic</dd>
+              <dt>Handle</dt><dd>unassigned</dd>
+              <dt>Sprint</dt><dd>WINTRAIN</dd>
+              <dt>File</dt><dd>WINTRAIN-backlog-P2-test-add-pester-tests-for-trainer-hook-reminder-logic-44fnwj.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+    <div class="column" data-status="todo">
+      <div class="column-header">
+        <span>TODO <span class="count">(5)</span></span>
+        
+      </div>
+      <div class="">
+        
+        <div class="card"
+             data-status="todo"
+             data-priority="P1"
+             data-type="feature"
+             data-handle=""
+             data-sprint="TTSINTEG">
+          <div class="card-token">
+            <span class="priority p1">P1</span>
+            <span class="type">featu</span>
+            <span class="card-id">7g52mr</span>
+            <span class="card-title">step-1-tts-config-schema-and-peon-update-backfill</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>step-1-tts-config-schema-and-peon-update-backfill</dd>
+              <dt>Handle</dt><dd>unassigned</dd>
+              <dt>Sprint</dt><dd>TTSINTEG</dd>
+              <dt>File</dt><dd>TTSINTEG-todo-P1-feature-step-1-tts-config-schema-and-peon-update-backfill-7g52mr.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+        <div class="card"
+             data-status="todo"
+             data-priority="P1"
+             data-type="feature"
+             data-handle=""
+             data-sprint="TTSINTEG">
+          <div class="card-token">
+            <span class="priority p1">P1</span>
+            <span class="type">featu</span>
+            <span class="card-id">3c490l</span>
+            <span class="card-title">step-2-speech-text-resolution-in-python-and-powershell-routing-blocks</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>step-2-speech-text-resolution-in-python-and-powershell-routing-blocks</dd>
+              <dt>Handle</dt><dd>unassigned</dd>
+              <dt>Sprint</dt><dd>TTSINTEG</dd>
+              <dt>File</dt><dd>TTSINTEG-todo-P1-feature-step-2-speech-text-resolution-in-python-and-powershell-routing-blocks-3c490l.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+        <div class="card"
+             data-status="todo"
+             data-priority="P1"
+             data-type="feature"
+             data-handle=""
+             data-sprint="TTSINTEG">
+          <div class="card-token">
+            <span class="priority p1">P1</span>
+            <span class="type">featu</span>
+            <span class="card-id">s81ofk</span>
+            <span class="card-title">step-3-speak-function-pid-tracking-and-mode-sequencing-for-unix</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>step-3-speak-function-pid-tracking-and-mode-sequencing-for-unix</dd>
+              <dt>Handle</dt><dd>unassigned</dd>
+              <dt>Sprint</dt><dd>TTSINTEG</dd>
+              <dt>File</dt><dd>TTSINTEG-todo-P1-feature-step-3-speak-function-pid-tracking-and-mode-sequencing-for-unix-s81ofk.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+        <div class="card"
+             data-status="todo"
+             data-priority="P1"
+             data-type="feature"
+             data-handle=""
+             data-sprint="TTSINTEG">
+          <div class="card-token">
+            <span class="priority p1">P1</span>
+            <span class="type">featu</span>
+            <span class="card-id">p7hchj</span>
+            <span class="card-title">step-4-powershell-tts-port-for-windows</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>step-4-powershell-tts-port-for-windows</dd>
+              <dt>Handle</dt><dd>unassigned</dd>
+              <dt>Sprint</dt><dd>TTSINTEG</dd>
+              <dt>File</dt><dd>TTSINTEG-todo-P1-feature-step-4-powershell-tts-port-for-windows-p7hchj.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+        <div class="card"
+             data-status="todo"
+             data-priority="P1"
+             data-type="feature"
+             data-handle=""
+             data-sprint="TTSINTEG">
+          <div class="card-token">
+            <span class="priority p1">P1</span>
+            <span class="type">featu</span>
+            <span class="card-id">ia8id8</span>
+            <span class="card-title">tts-integration-layer-sprint</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>tts-integration-layer-sprint</dd>
+              <dt>Handle</dt><dd>unassigned</dd>
+              <dt>Sprint</dt><dd>TTSINTEG</dd>
+              <dt>File</dt><dd>TTSINTEG-todo-P1-feature-tts-integration-layer-sprint-ia8id8.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+    <div class="column" data-status="in_progress">
+      <div class="column-header">
+        <span>IN PROGRESS <span class="count">(1)</span></span>
+        
+      </div>
+      <div class="">
+        
+        <div class="card"
+             data-status="in_progress"
+             data-priority="P1"
+             data-type="feature"
+             data-handle="CAMERON"
+             data-sprint="WINFOCUS">
+          <div class="card-token">
+            <span class="priority p1">P1</span>
+            <span class="type">featu</span>
+            <span class="card-id">w7eys1</span>
+            <span class="card-title">step-1-toast-click-to-focus-via-process-name-matching</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>step-1-toast-click-to-focus-via-process-name-matching</dd>
+              <dt>Handle</dt><dd>CAMERON</dd>
+              <dt>Sprint</dt><dd>WINFOCUS</dd>
+              <dt>File</dt><dd>WINFOCUS-in_progress-P1-feature-step-1-toast-click-to-focus-via-process-name-matching-w7eys1-CAMERON.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+    <div class="column" data-status="done">
+      <div class="column-header">
+        <span>DONE <span class="count">(4)</span></span>
+        
+        <button class="done-toggle" id="done-toggle-btn">Show</button>
+        
+      </div>
+      <div class="done-cards collapsed">
+        
+        <div class="card"
+             data-status="done"
+             data-priority="P1"
+             data-type="feature"
+             data-handle="CAMERON"
+             data-sprint="">
+          <div class="card-token">
+            <span class="priority p1">P1</span>
+            <span class="type">featu</span>
+            <span class="card-id">kr62ia</span>
+            <span class="card-title">windows-notification-template-resolution-engine</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>windows-notification-template-resolution-engine</dd>
+              <dt>Handle</dt><dd>CAMERON</dd>
+              <dt>Sprint</dt><dd>—</dd>
+              <dt>File</dt><dd>done-P1-feature-windows-notification-template-resolution-engine-kr62ia-CAMERON.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+        <div class="card"
+             data-status="done"
+             data-priority="P2"
+             data-type="chore"
+             data-handle=""
+             data-sprint="WINTEST">
+          <div class="card-token">
+            <span class="priority p2">P2</span>
+            <span class="type">chore</span>
+            <span class="card-id">od5a0c</span>
+            <span class="card-title">deduplicate-install-ps1-shared-functions-and-hoist-peondebug</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>deduplicate-install-ps1-shared-functions-and-hoist-peondebug</dd>
+              <dt>Handle</dt><dd>unassigned</dd>
+              <dt>Sprint</dt><dd>WINTEST</dd>
+              <dt>File</dt><dd>WINTEST-done-P2-chore-deduplicate-install-ps1-shared-functions-and-hoist-peondebug-od5a0c.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+        <div class="card"
+             data-status="done"
+             data-priority="P2"
+             data-type="chore"
+             data-handle=""
+             data-sprint="WINTEST">
+          <div class="card-token">
+            <span class="priority p2">P2</span>
+            <span class="type">chore</span>
+            <span class="card-id">cb0gpg</span>
+            <span class="card-title">harden-install-ps1-volume-regex-replacement-to-avoid-trailing-comma-on-last-json-key</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>harden-install-ps1-volume-regex-replacement-to-avoid-trailing-comma-on-last-json-key</dd>
+              <dt>Handle</dt><dd>unassigned</dd>
+              <dt>Sprint</dt><dd>WINTEST</dd>
+              <dt>File</dt><dd>WINTEST-done-P2-chore-harden-install-ps1-volume-regex-replacement-to-avoid-trailing-comma-on-last-json-key-cb0gpg.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+        <div class="card"
+             data-status="done"
+             data-priority="P2"
+             data-type="chore"
+             data-handle="CAMERON"
+             data-sprint="WINTEST">
+          <div class="card-token">
+            <span class="priority p2">P2</span>
+            <span class="type">chore</span>
+            <span class="card-id">f4w9gu</span>
+            <span class="card-title">techdebt2-deferred-items-5-minor-ps1-and-bats-cleanups</span>
+          </div>
+          <div class="card-detail" hidden>
+            <dl>
+              <dt>Title</dt><dd>techdebt2-deferred-items-5-minor-ps1-and-bats-cleanups</dd>
+              <dt>Handle</dt><dd>CAMERON</dd>
+              <dt>Sprint</dt><dd>WINTEST</dd>
+              <dt>File</dt><dd>WINTEST-done-P2-chore-techdebt2-deferred-items-5-minor-ps1-and-bats-cleanups-f4w9gu-CAMERON.md</dd>
+            </dl>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+  </div>
+
+  <aside class="stats" id="stats-panel">
+    <h2>Board Stats</h2>
+    <div id="stats-content"></div>
+  </aside>
+  
+
+  <noscript>
+    <p>JavaScript is required for filtering and card expansion.
+    The board layout above shows all cards.</p>
+  </noscript>
+
+  <script>
+    var SNAPSHOT = {"board_name": "peon-ping", "cards": [{"card_type": "chore", "filename": "backlog-P2-chore-upgrade-write-stateatomic-to-true-atomic-overwrite-when-ps-5-1-is-dropped-26yooi.md", "handle": "", "id": "26yooi", "priority": "P2", "sprint": "", "status": "backlog", "title": "upgrade-write-stateatomic-to-true-atomic-overwrite-when-ps-5-1-is-dropped"}, {"card_type": "feature", "filename": "done-P1-feature-windows-notification-template-resolution-engine-kr62ia-CAMERON.md", "handle": "CAMERON", "id": "kr62ia", "priority": "P1", "sprint": "", "status": "done", "title": "windows-notification-template-resolution-engine"}, {"card_type": "feature", "filename": "TTSINTEG-todo-P1-feature-step-1-tts-config-schema-and-peon-update-backfill-7g52mr.md", "handle": "", "id": "7g52mr", "priority": "P1", "sprint": "TTSINTEG", "status": "todo", "title": "step-1-tts-config-schema-and-peon-update-backfill"}, {"card_type": "feature", "filename": "TTSINTEG-todo-P1-feature-step-2-speech-text-resolution-in-python-and-powershell-routing-blocks-3c490l.md", "handle": "", "id": "3c490l", "priority": "P1", "sprint": "TTSINTEG", "status": "todo", "title": "step-2-speech-text-resolution-in-python-and-powershell-routing-blocks"}, {"card_type": "feature", "filename": "TTSINTEG-todo-P1-feature-step-3-speak-function-pid-tracking-and-mode-sequencing-for-unix-s81ofk.md", "handle": "", "id": "s81ofk", "priority": "P1", "sprint": "TTSINTEG", "status": "todo", "title": "step-3-speak-function-pid-tracking-and-mode-sequencing-for-unix"}, {"card_type": "feature", "filename": "TTSINTEG-todo-P1-feature-step-4-powershell-tts-port-for-windows-p7hchj.md", "handle": "", "id": "p7hchj", "priority": "P1", "sprint": "TTSINTEG", "status": "todo", "title": "step-4-powershell-tts-port-for-windows"}, {"card_type": "feature", "filename": "TTSINTEG-todo-P1-feature-tts-integration-layer-sprint-ia8id8.md", "handle": "", "id": "ia8id8", "priority": "P1", "sprint": "TTSINTEG", "status": "todo", "title": "tts-integration-layer-sprint"}, {"card_type": "feature", "filename": "WINFOCUS-in_progress-P1-feature-step-1-toast-click-to-focus-via-process-name-matching-w7eys1-CAMERON.md", "handle": "CAMERON", "id": "w7eys1", "priority": "P1", "sprint": "WINFOCUS", "status": "in_progress", "title": "step-1-toast-click-to-focus-via-process-name-matching"}, {"card_type": "chore", "filename": "WINTEST-done-P2-chore-deduplicate-install-ps1-shared-functions-and-hoist-peondebug-od5a0c.md", "handle": "", "id": "od5a0c", "priority": "P2", "sprint": "WINTEST", "status": "done", "title": "deduplicate-install-ps1-shared-functions-and-hoist-peondebug"}, {"card_type": "chore", "filename": "WINTEST-done-P2-chore-harden-install-ps1-volume-regex-replacement-to-avoid-trailing-comma-on-last-json-key-cb0gpg.md", "handle": "", "id": "cb0gpg", "priority": "P2", "sprint": "WINTEST", "status": "done", "title": "harden-install-ps1-volume-regex-replacement-to-avoid-trailing-comma-on-last-json-key"}, {"card_type": "chore", "filename": "WINTEST-done-P2-chore-techdebt2-deferred-items-5-minor-ps1-and-bats-cleanups-f4w9gu-CAMERON.md", "handle": "CAMERON", "id": "f4w9gu", "priority": "P2", "sprint": "WINTEST", "status": "done", "title": "techdebt2-deferred-items-5-minor-ps1-and-bats-cleanups"}, {"card_type": "chore", "filename": "WINTRAIN-backlog-P2-chore-consolidate-peon-ps1-write-stateatomic-to-single-end-of-hook-flush-n4420w.md", "handle": "", "id": "n4420w", "priority": "P2", "sprint": "WINTRAIN", "status": "backlog", "title": "consolidate-peon-ps1-write-stateatomic-to-single-end-of-hook-flush"}, {"card_type": "refactor", "filename": "WINTRAIN-backlog-P2-refactor-extract-format-trainerbar-helper-to-deduplicate-progress-bar-rendering-zolklp.md", "handle": "", "id": "zolklp", "priority": "P2", "sprint": "WINTRAIN", "status": "backlog", "title": "extract-format-trainerbar-helper-to-deduplicate-progress-bar-rendering"}, {"card_type": "refactor", "filename": "WINTRAIN-backlog-P2-refactor-harden-pester-test-helper-argument-handling-9vcj7n.md", "handle": "", "id": "9vcj7n", "priority": "P2", "sprint": "WINTRAIN", "status": "backlog", "title": "harden-pester-test-helper-argument-handling"}, {"card_type": "test", "filename": "WINTRAIN-backlog-P2-test-add-pester-tests-for-trainer-cli-subcommands-t276tx.md", "handle": "", "id": "t276tx", "priority": "P2", "sprint": "WINTRAIN", "status": "backlog", "title": "add-pester-tests-for-trainer-cli-subcommands"}, {"card_type": "test", "filename": "WINTRAIN-backlog-P2-test-add-pester-tests-for-trainer-hook-reminder-logic-44fnwj.md", "handle": "", "id": "44fnwj", "priority": "P2", "sprint": "WINTRAIN", "status": "backlog", "title": "add-pester-tests-for-trainer-hook-reminder-logic"}], "metrics": {"by_handle": {"": 13, "CAMERON": 3}, "by_priority": {"P1": 7, "P2": 9}, "by_status": {"backlog": 6, "done": 4, "in_progress": 1, "todo": 5}, "by_type": {"chore": 5, "feature": 7, "refactor": 2, "test": 2}, "total_cards": 16}, "timestamp": "2026-03-29T01:49:27.292312+00:00"};
+    (function() {
+      var snapshot = SNAPSHOT;
+      var cards = snapshot.cards || [];
+      var nonDraft = cards.filter(function(c) { return c.status !== 'draft'; });
+      var activeFilters = {};
+
+      // --- Filter chips ---
+      function toggleFilter(dim, val) {
+        if (!activeFilters[dim]) activeFilters[dim] = new Set();
+        var s = activeFilters[dim];
+        if (s.has(val)) {
+          s.delete(val);
+          if (s.size === 0) delete activeFilters[dim];
+        } else {
+          s.add(val);
+        }
+        applyFilters();
+        updateChipStates();
+        updateClearButton();
+        renderStats();
+      }
+
+      function applyFilters() {
+        var cardEls = document.querySelectorAll('.card');
+        cardEls.forEach(function(el) {
+          var dominated = false;
+          var dimMap = {
+            status: el.getAttribute('data-status'),
+            priority: el.getAttribute('data-priority'),
+            type: el.getAttribute('data-type'),
+            handle: el.getAttribute('data-handle'),
+            sprint: el.getAttribute('data-sprint')
+          };
+          for (var dim in activeFilters) {
+            if (activeFilters.hasOwnProperty(dim)) {
+              var allowed = activeFilters[dim];
+              var cardVal = dimMap[dim] || '';
+              if (!allowed.has(cardVal)) {
+                dominated = true;
+                break;
+              }
+            }
+          }
+          if (dominated) {
+            el.setAttribute('data-filtered', 'true');
+          } else {
+            el.removeAttribute('data-filtered');
+          }
+        });
+      }
+
+      function updateChipStates() {
+        document.querySelectorAll('.chip').forEach(function(chip) {
+          var dim = chip.getAttribute('data-dim');
+          var val = chip.getAttribute('data-val');
+          if (activeFilters[dim] && activeFilters[dim].has(val)) {
+            chip.classList.add('active');
+          } else {
+            chip.classList.remove('active');
+          }
+        });
+      }
+
+      function updateClearButton() {
+        var btn = document.getElementById('clear-filters-btn');
+        if (!btn) return;
+        var hasAny = Object.keys(activeFilters).length > 0;
+        btn.style.display = hasAny ? 'inline-block' : 'none';
+      }
+
+      function clearAllFilters() {
+        activeFilters = {};
+        applyFilters();
+        updateChipStates();
+        updateClearButton();
+        renderStats();
+      }
+
+      // --- Card expansion ---
+      document.querySelectorAll('.card-token').forEach(function(token) {
+        token.addEventListener('click', function() {
+          var detail = token.parentElement.querySelector('.card-detail');
+          if (detail) {
+            detail.hidden = !detail.hidden;
+          }
+        });
+      });
+
+      // --- Done column toggle ---
+      var doneToggle = document.getElementById('done-toggle-btn');
+      if (doneToggle) {
+        doneToggle.addEventListener('click', function() {
+          var doneCards = doneToggle.closest('.column').querySelector('.done-cards');
+          if (doneCards) {
+            doneCards.classList.toggle('collapsed');
+            doneToggle.textContent = doneCards.classList.contains('collapsed') ? 'Show' : 'Hide';
+          }
+        });
+      }
+
+      // --- Stats ---
+      function renderStats() {
+        var panel = document.getElementById('stats-content');
+        if (!panel) return;
+        var visible = nonDraft.filter(function(c) {
+          for (var dim in activeFilters) {
+            if (activeFilters.hasOwnProperty(dim)) {
+              var allowed = activeFilters[dim];
+              var cardVal = '';
+              if (dim === 'status') cardVal = c.status;
+              else if (dim === 'priority') cardVal = c.priority;
+              else if (dim === 'type') cardVal = c.card_type;
+              else if (dim === 'handle') cardVal = c.handle;
+              else if (dim === 'sprint') cardVal = c.sprint;
+              if (!allowed.has(cardVal)) return false;
+            }
+          }
+          return true;
+        });
+
+        var byStatus = {}, byPriority = {}, byType = {};
+        visible.forEach(function(c) {
+          byStatus[c.status] = (byStatus[c.status] || 0) + 1;
+          byPriority[c.priority] = (byPriority[c.priority] || 0) + 1;
+          byType[c.card_type] = (byType[c.card_type] || 0) + 1;
+        });
+
+        var html = '<div class="stat-group"><h3>Visible: ' + visible.length + ' / ' + nonDraft.length + '</h3></div>';
+        html += buildStatGroup('By Status', byStatus);
+        html += buildStatGroup('By Priority', byPriority);
+        html += buildStatGroup('By Type', byType);
+        panel.innerHTML = html;
+      }
+
+      function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      function buildStatGroup(title, counts) {
+        var h = '<div class="stat-group"><h3>' + escapeHtml(title) + '</h3>';
+        for (var key in counts) {
+          if (counts.hasOwnProperty(key)) {
+            h += '<div class="stat-row"><span class="stat-label">' + escapeHtml(key) + '</span><span class="stat-value">' + counts[key] + '</span></div>';
+          }
+        }
+        h += '</div>';
+        return h;
+      }
+
+      // --- Init ---
+      document.querySelectorAll('.chip').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+          toggleFilter(chip.getAttribute('data-dim'), chip.getAttribute('data-val'));
+        });
+      });
+
+      var clearBtn = document.getElementById('clear-filters-btn');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', clearAllFilters);
+      }
+
+      renderStats();
+    })();
+  </script>
+</body>
+</html>
