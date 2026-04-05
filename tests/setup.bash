@@ -246,8 +246,10 @@ elif [[ "$*" == *"iTerm2"* ]] && [[ "$*" == *"tty"* ]]; then
     cat "${CLAUDE_PEON_DIR}/.mock_iterm_active_ttys"
   fi
 elif [[ "$1" == "-l" ]] && [[ "$2" == "JavaScript" ]]; then
-  # JXA overlay call — log to overlay.log with full arguments
-  echo "$@" >> "${CLAUDE_PEON_DIR}/overlay.log"
+  # JXA overlay call — log to overlay.log with tab-separated arguments
+  # (preserves empty args that echo "$@" would collapse)
+  printf '%s\t' "$@" >> "${CLAUDE_PEON_DIR}/overlay.log"
+  printf '\n' >> "${CLAUDE_PEON_DIR}/overlay.log"
 else
   echo "$@" >> "${CLAUDE_PEON_DIR}/osascript.log"
 fi

@@ -2875,9 +2875,9 @@ json.dump(m, open('$TEST_DIR/packs/peon/manifest.json', 'w'))
   run_peon '{"hook_event_name":"Stop","cwd":"/tmp/myproject","session_id":"s1","permission_mode":"default"}'
   [ "$PEON_EXIT" -eq 0 ]
   [ -f "$TEST_DIR/overlay.log" ]
-  # overlay.log line: -l JavaScript /path/mac-overlay.js msg color icon slot dismiss bundle_id ide_pid session_tty subtitle notif_position notify_type all_screens
+  # overlay.log is tab-separated: -l  JavaScript  /path/mac-overlay.js  msg  color  icon  slot  dismiss  bundle_id  ide_pid  session_tty  subtitle  notif_position  notify_type  all_screens
   args=$(tail -1 "$TEST_DIR/overlay.log")
-  # Count space-separated tokens — should be at least 7 after "-l JavaScript script"
+  # Count non-empty tokens — should be at least 7 after "-l JavaScript script"
   count=$(echo "$args" | wc -w | tr -d ' ')
   [ "$count" -ge 7 ]
 }
@@ -2889,13 +2889,9 @@ json.dump(m, open('$TEST_DIR/packs/peon/manifest.json', 'w'))
   run_peon '{"hook_event_name":"Stop","cwd":"/tmp/myproject","session_id":"s1","permission_mode":"default"}'
   [ "$PEON_EXIT" -eq 0 ]
   [ -f "$TEST_DIR/overlay.log" ]
-  # Extract ide_pid robustly: it's the only multi-digit (2+) positive integer in
-  # the overlay args (slot/dismiss are single-digit, screen_index can be negative).
-  # Previous awk $(NF-4) approach was fragile because empty args (icon, bundle_id,
-  # session_tty, subtitle) collapse in the mock's echo "$@" output, and the number
-  # of non-empty fields varies by environment (session_tty is empty in CI but
-  # resolves to a real TTY path like /dev/ttys008 when running inside an IDE).
-  ide_pid=$(tail -1 "$TEST_DIR/overlay.log" | grep -oE '\b[0-9]{2,}\b' | head -1)
+  # overlay.log is tab-separated; ide_pid is the 10th field:
+  # -l  JavaScript  script  msg  color  icon  slot  dismiss  bundle_id  ide_pid  ...
+  ide_pid=$(tail -1 "$TEST_DIR/overlay.log" | cut -f10)
   [[ "$ide_pid" =~ ^[0-9]+$ ]]
 }
 
