@@ -345,10 +345,24 @@ TOASTEOF
         powershell.exe -NoProfile -NonInteractive -Command "
           Add-Type -AssemblyName System.Windows.Forms
           Add-Type -AssemblyName System.Drawing
+          Add-Type @'
+using System;
+using System.Windows.Forms;
+public class NoActivateForm : Form {
+    protected override bool ShowWithoutActivation { get { return true; } }
+    protected override CreateParams CreateParams {
+        get {
+            CreateParams cp = base.CreateParams;
+            cp.ExStyle |= 0x08000000;
+            return cp;
+        }
+    }
+}
+'@ -ReferencedAssemblies System.Windows.Forms
           \$msgPath = '$tmpmsg'
           \$msgText = if (Test-Path \$msgPath) { (Get-Content -Raw \$msgPath) } else { '' }
           foreach (\$screen in [System.Windows.Forms.Screen]::AllScreens) {
-            \$form = New-Object System.Windows.Forms.Form
+            \$form = New-Object NoActivateForm
             \$form.FormBorderStyle = 'None'
             \$form.BackColor = [System.Drawing.Color]::FromArgb($rgb_r, $rgb_g, $rgb_b)
             \$form.Size = New-Object System.Drawing.Size(500, 80)
@@ -479,9 +493,23 @@ TOASTEOF
         powershell.exe -NoProfile -NonInteractive -Command "
           Add-Type -AssemblyName System.Windows.Forms
           Add-Type -AssemblyName System.Drawing
+          Add-Type @'
+using System;
+using System.Windows.Forms;
+public class NoActivateForm : Form {
+    protected override bool ShowWithoutActivation { get { return true; } }
+    protected override CreateParams CreateParams {
+        get {
+            CreateParams cp = base.CreateParams;
+            cp.ExStyle |= 0x08000000;
+            return cp;
+        }
+    }
+}
+'@ -ReferencedAssemblies System.Windows.Forms
           \$msgText = if (Test-Path '$tmpmsg_win') { (Get-Content -Raw '$tmpmsg_win') } else { '' }
           foreach (\$screen in [System.Windows.Forms.Screen]::AllScreens) {
-            \$form = New-Object System.Windows.Forms.Form
+            \$form = New-Object NoActivateForm
             \$form.FormBorderStyle = 'None'
             \$form.BackColor = [System.Drawing.Color]::FromArgb($rgb_r, $rgb_g, $rgb_b)
             \$form.Size = New-Object System.Drawing.Size(500, 80)
