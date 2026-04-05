@@ -3254,7 +3254,12 @@ _PEON_HOOK_TTY=$(_peon_walk_tty)
 # --- Single Python call: config, event parsing, agent detection, category routing, sound picking ---
 # Consolidates 5 separate python3 invocations into one for ~120-200ms faster hook response.
 # Outputs shell variables consumed by the bash play/notify/title logic below.
-_PEON_PYOUT=$(python3 -c "
+# Write Python to a temp file instead of passing inline via python3 -c "..."
+# to avoid the MSYS2/Windows ARG_MAX command-line length limit (~32KB).
+_PEON_PY_SCRIPT=$(mktemp "${TMPDIR:-/tmp}/peon-py.XXXXXX")
+trap 'rm -f "$_PEON_PY_SCRIPT"' EXIT
+# Part 1: preamble with shell variable interpolation (unquoted heredoc)
+cat > "$_PEON_PY_SCRIPT" << _PEON_PYHEAD
 import sys, json, os, re, random, time, shlex, tempfile
 q = shlex.quote
 _peon_start = time.monotonic()
@@ -3269,6 +3274,9 @@ state_dirty = False
 
 # --- Atomic state I/O helpers (shared definition from _PEON_STATE_PY_HELPERS) ---
 ${_PEON_STATE_PY_HELPERS}
+_PEON_PYHEAD
+# Part 2: main Python body (quoted heredoc -- no escaping changes needed)
+cat >> "$_PEON_PY_SCRIPT" << 'PYEOF'
 
 # --- Load config ---
 _config_error = None
@@ -3302,12 +3310,12 @@ if _log_enabled:
 
     def _log_quote(v):
         s = str(v)
-        if ' ' in s or '\"' in s or '=' in s or '\n' in s or '\r' in s or not s:
-            s = s.replace('\\\\', '\\\\\\\\').replace('\"', '\\\\\"')
+        if ' ' in s or '"' in s or '=' in s or '\n' in s or '\r' in s or not s:
+            s = s.replace('\\', '\\\\').replace('"', '\\"')
             # Escape newlines/CR after backslash escaping to avoid double-escape.
             # Preserves the one-line-per-entry log invariant.
-            s = s.replace('\r', '\\\\r').replace('\n', '\\\\n')
-            return '\"' + s + '\"'
+            s = s.replace('\r', '\\r').replace('\n', '\\n')
+            return '"' + s + '"'
         return s
 
     def log(phase, **kw):
@@ -4150,7 +4158,10 @@ print('TAB_COLOR_RGB=' + q(tab_color_rgb))
 _auto_debug = cfg.get('debug', False) or os.environ.get('PEON_DEBUG') == '1'
 if _auto_debug:
     print('PEON_AUTO_PRUNE=' + q(str(cfg.get('debug_retention_days', 7))))
-" <<< "$INPUT" 2>/dev/null)
+PYEOF
+_PEON_PYOUT=$(python3 "$_PEON_PY_SCRIPT" <<< "$INPUT" 2>/dev/null)
+_peon_py_rc=$?
+rm -f "$_PEON_PY_SCRIPT"
 eval "$_PEON_PYOUT"
 
 # --- Bash-side debug log function for [play] and [notify] phases ---

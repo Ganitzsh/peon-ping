@@ -4302,7 +4302,7 @@ json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
   local clean_bin
   clean_bin="$(mktemp -d)"
   # Keep only python3 (needed for peon.sh), bash, date, grep, sed, etc.
-  for util in python3 bash date grep sed awk cat wc sort head tail mkdir touch rm printf tr cut; do
+  for util in python3 bash date grep sed awk cat wc sort head tail mkdir mktemp touch rm printf tr cut; do
     local util_path
     util_path=$(command -v "$util" 2>/dev/null) || true
     [ -n "$util_path" ] && ln -sf "$util_path" "$clean_bin/$util"
