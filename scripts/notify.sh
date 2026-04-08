@@ -71,7 +71,7 @@ except Exception:
     print('')
 " 2>/dev/null || echo "")
   case "$theme" in
-    jarvis|glass|sakura) echo "$theme" ;;
+    jarvis|glass|sakura|warcraft) echo "$theme" ;;
     *) echo "" ;;
   esac
 }
