@@ -5,6 +5,7 @@
 
 ObjC.import('Cocoa');
 ObjC.import('QuartzCore');
+ObjC.import('WebKit');
 
 function run(argv) {
   var message  = argv[0] || 'peon-ping';
@@ -216,13 +217,23 @@ function run(argv) {
   }
 
   // ══════════════════════════════════════════════
-  // PACK ICON (peasant portrait)
+  // PACK ICON (static portrait, left side)
   // ══════════════════════════════════════════════
   var iconSize = 52;
-  var iconX = 36;
+  var iconX = 44;
   var iconY = (winH - iconSize) / 2;
-  var textX = iconX + iconSize + 18; // text starts after icon
-  var textMaxW = winW - textX - 36;
+  var textX = iconX + iconSize + 18;
+
+  // Check for animated.gif — if present, reserve space on the right for it
+  var packDir = iconPath ? ObjC.unwrap($(iconPath).stringByDeletingLastPathComponent) : '';
+  var animatedGifPath = packDir ? packDir + '/animated.gif' : '';
+  var hasAnimatedGif = animatedGifPath && $.NSFileManager.defaultManager.fileExistsAtPath($(animatedGifPath));
+
+  var animSize = 72;
+  var animMargin = 12;
+  var textMaxW = hasAnimatedGif
+    ? winW - textX - animSize - animMargin - 28
+    : winW - textX - 36;
 
   if (iconPath) {
     var iconImage = $.NSImage.alloc.initWithContentsOfFile($(iconPath));
@@ -231,13 +242,36 @@ function run(argv) {
       iconView.setImage(iconImage);
       iconView.setImageScaling($.NSImageScaleProportionallyUpOrDown);
       iconView.setImageAlignment($.NSImageAlignCenter);
-      // Gold border around icon
       iconView.setWantsLayer(true);
       iconView.layer.setBorderWidth(2.0);
       iconView.layer.setBorderColor(cg(0.83, 0.68, 0.21, 0.9));
       iconView.layer.setCornerRadius(4.0);
       win.contentView.addSubview(iconView);
     }
+  }
+
+  // ══════════════════════════════════════════════
+  // ANIMATED GIF (right side, next to message)
+  // ══════════════════════════════════════════════
+  if (hasAnimatedGif) {
+    var animX = winW - animSize - 36;
+    var animY = (winH - animSize) / 2;
+    var wkConfig = $.WKWebViewConfiguration.alloc.init;
+    var webView = $.WKWebView.alloc.initWithFrameConfiguration(
+      $.NSMakeRect(animX, animY, animSize, animSize), wkConfig
+    );
+    webView.setWantsLayer(true);
+    webView.layer.setCornerRadius(4.0);
+    webView.layer.setMasksToBounds(true);
+    webView.setValueForKey(false, 'drawsBackground');
+    // Load GIF as base64 data URI to avoid file:// security restrictions
+    var gifData = $.NSData.dataWithContentsOfFile($(animatedGifPath));
+    var gifB64 = ObjC.unwrap(gifData.base64EncodedStringWithOptions(0));
+    var html = '<html><body style="margin:0;padding:0;background:transparent;overflow:hidden;display:flex;align-items:center;justify-content:center;height:100vh;">' +
+      '<img src="data:image/gif;base64,' + gifB64 + '" style="max-width:' + animSize + 'px;max-height:' + animSize + 'px;object-fit:contain;" />' +
+      '</body></html>';
+    webView.loadHTMLStringBaseURL($(html), $.NSURL.URLWithString($('about:blank')));
+    win.contentView.addSubview(webView);
   }
 
   // ══════════════════════════════════════════════
