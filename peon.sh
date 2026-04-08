@@ -3312,7 +3312,18 @@ if [ -t 0 ]; then
   exit 0
 fi
 
-INPUT=$(cat)
+# Bounded stdin read — on Windows git-bash, Claude Code's hook stdin pipe
+# sometimes never closes, causing plain `cat` to hang until the outer hook
+# timeout fires (surfacing as "SessionStart:* hook error" in the UI). Cap
+# the read at 2s; empty INPUT is handled gracefully by the Python block
+# below (json.load fails → PEON_EXIT=true → clean exit with rc 0).
+if command -v timeout >/dev/null 2>&1; then
+  INPUT=$(timeout 2 cat 2>/dev/null) || INPUT=""
+elif command -v gtimeout >/dev/null 2>&1; then
+  INPUT=$(gtimeout 2 cat 2>/dev/null) || INPUT=""
+else
+  INPUT=$(cat)
+fi
 
 # Debug log (uncomment to troubleshoot)
 # echo "$(date): peon hook — $INPUT" >> /tmp/peon-ping-debug.log
