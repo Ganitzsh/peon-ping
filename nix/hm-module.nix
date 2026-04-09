@@ -10,7 +10,7 @@ let
 
   # Fetch the og-packs repository
   ogPacksSrc = pkgs.fetchzip {
-    url = "https://github.com/PeonPing/og-packs/archive/refs/tags/v${ogPacksVersion}.tar.gz";
+    url = "https://github.com/Ganitzsh/og-packs/archive/refs/tags/v${ogPacksVersion}.tar.gz";
     sha256 = "sha256-jkybxNrXfc8GFPAi0Lb1rF8fsx8Z8K0k5gQxh8Y62Ds=";
     stripRoot = false;
   };

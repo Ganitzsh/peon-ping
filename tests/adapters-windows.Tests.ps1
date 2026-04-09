@@ -1467,7 +1467,7 @@ Describe "install-utils.ps1 Behavioral Validation" {
     # --- Test-SafeSourceRepo ---
 
     It "Test-SafeSourceRepo accepts org/repo format" {
-        Test-SafeSourceRepo "PeonPing/og-packs" | Should -BeTrue
+        Test-SafeSourceRepo "Ganitzsh/og-packs" | Should -BeTrue
         Test-SafeSourceRepo "user/repo.v2"      | Should -BeTrue
     }
 
@@ -2154,7 +2154,7 @@ Describe "install.ps1 E2E: Pack Download Flow" {
         function Test-SafeSourcePath($n)  { $n -match '^[A-Za-z0-9._/-]+$' -and $n -notmatch '\.\.' -and $n[0] -ne '/' }
         function Test-SafeFilename($n)    { $n -match '^[A-Za-z0-9._-]+$' }
 
-        $script:FallbackRepo = "PeonPing/og-packs"
+        $script:FallbackRepo = "Ganitzsh/og-packs"
         $script:FallbackRef = "v1.1.0"
     }
 
@@ -2204,7 +2204,7 @@ Describe "install.ps1 E2E: Pack Download Flow" {
         if (-not $sourcePath -or -not (Test-SafeSourcePath $sourcePath)) { $sourcePath = $packInfo.name }
 
         # Only source_repo should fall back; ref and path should keep their values
-        $sourceRepo | Should -Be "PeonPing/og-packs"
+        $sourceRepo | Should -Be "Ganitzsh/og-packs"
         $sourceRef | Should -Be "v3.0.0"
         $sourcePath | Should -Be "custom/path"
     }
@@ -2269,7 +2269,7 @@ Describe "install.ps1 E2E: Pack Download Flow" {
         if (-not $sourceRef -or -not (Test-SafeSourceRef $sourceRef)) { $sourceRef = $script:FallbackRef }
         if (-not $sourcePath -or -not (Test-SafeSourcePath $sourcePath)) { $sourcePath = $packInfo.name }
 
-        $sourceRepo | Should -Be "PeonPing/og-packs"
+        $sourceRepo | Should -Be "Ganitzsh/og-packs"
         $sourceRef | Should -Be "v1.1.0"
         $sourcePath | Should -Be "my_pack"
     }
