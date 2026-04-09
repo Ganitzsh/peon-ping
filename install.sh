@@ -551,6 +551,7 @@ if [ -n "$SCRIPT_DIR" ]; then
     cp "$SCRIPT_DIR/scripts/"*.ps1 "$INSTALL_DIR/scripts/" 2>/dev/null || true
     cp "$SCRIPT_DIR/scripts/"*.swift "$INSTALL_DIR/scripts/" 2>/dev/null || true
     cp "$SCRIPT_DIR/scripts/"*.js "$INSTALL_DIR/scripts/" 2>/dev/null || true
+    cp "$SCRIPT_DIR/scripts/"*.png "$INSTALL_DIR/scripts/" 2>/dev/null || true
   fi
   if [ -f "$SCRIPT_DIR/docs/peon-icon.png" ]; then
     mkdir -p "$INSTALL_DIR/docs"
