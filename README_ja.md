@@ -331,10 +331,11 @@ peon-ping には3つの独立したコントロールがあり、自由に組み
 - **notification_style**: `"overlay"` または `"standard"` — デスクトップ通知の表示方法を制御（デフォルト: `"overlay"`）
   - **overlay**: 大型の目立つバナー — macOS では JXA Cocoa オーバーレイ、WSL/MSYS2 では Windows Forms ポップアップ。オーバーレイをクリックするとターミナルにフォーカス（Ghostty、Warp、iTerm2、Zed、Terminal.app に対応）。iTerm2 ではクリックで正しいタブ/ペイン/ウィンドウにフォーカスします。
   - **standard**: システム通知 — macOS では [`terminal-notifier`](https://github.com/julienXX/terminal-notifier) / `osascript`、WSL/MSYS2 では Windows toast。`terminal-notifier` がインストールされている場合（`brew install terminal-notifier`）、通知をクリックすると自動的にターミナルにフォーカス（Ghostty、Warp、iTerm2、Zed、Terminal.app に対応）。ネイティブ Windows では、toast 通知をクリックすると IDE またはターミナルウィンドウにフォーカス（VS Code、Cursor、Windsurf、Windows Terminal、PowerShell に対応）。複数ウィンドウが開いている場合、PID ベースのプロセスツリーマッチングにより、イベントを発生させた正確なウィンドウが通知のターゲットになります。
-- **overlay_theme**: `"jarvis"`、`"glass"`、`"sakura"`、または省略でデフォルトオーバーレイ — macOS のみ（デフォルト: なし）
+- **overlay_theme**: `"jarvis"`、`"glass"`、`"sakura"`、`"warcraft"`、または省略でデフォルトオーバーレイ — macOS のみ（デフォルト: なし）
   - **jarvis**: 回転するアーク、目盛り、プログレスリング付きの円形 HUD
   - **glass**: アクセントカラーバー、プログレスライン、タイムスタンプ付きのグラスモーフィズムパネル
   - **sakura**: 盆栽の木とアニメーション桜の花びら付きの禅庭園
+  - **warcraft**: Warcraft 3 コマンドカード風。金縁、パック肖像画、アニメーションGIF。パックごとのテーマ別ヘッダーとフレーバーテキスト（例：「JOB'S DONE」「SOMETHING NEED DOING?」）
 - **categories**: 個別の CESP サウンドカテゴリのオン/オフを切り替え（例: `"session.start": false` で挨拶サウンドを無効化）
 - **annoyed_threshold / annoyed_window_seconds**: N 秒以内に何回のプロンプトで `user.spam` イースターエッグがトリガーされるか
 - **silent_window_seconds**: N 秒未満のタスクの `task.complete` サウンドと通知を抑制（例: `10` にすると10秒以上かかるタスクのみサウンドが再生される）

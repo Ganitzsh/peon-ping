@@ -339,10 +339,11 @@ peon-ping 有三个独立的控制开关，可以混合使用：
 - **notification_style**：`"overlay"` 或 `"standard"` — 控制桌面通知显示方式（默认：`"overlay"`）
   - **overlay**：大型醒目横幅 — macOS 上使用 JXA Cocoa 覆盖，WSL/MSYS2 上使用 Windows Forms 弹窗。点击覆盖层可聚焦终端（支持 Ghostty、Warp、iTerm2、Zed、Terminal.app）。在 iTerm2 上，点击可聚焦到正确的标签页/窗格/窗口。
   - **standard**：系统通知 — macOS 上使用 [`terminal-notifier`](https://github.com/julienXX/terminal-notifier) / `osascript`，WSL/MSYS2 上使用 Windows toast。安装 `terminal-notifier`（`brew install terminal-notifier`）后，点击通知可自动聚焦终端。在原生 Windows 上，点击 toast 通知可聚焦 IDE 或终端窗口（支持 VS Code、Cursor、Windsurf、Windows Terminal、PowerShell）。当打开多个窗口时，通知会通过基于 PID 的进程树匹配精确定位到触发事件的窗口。
-- **overlay_theme**：`"jarvis"`、`"glass"`、`"sakura"`，或留空使用默认覆盖层 — 仅 macOS（默认：无）
+- **overlay_theme**：`"jarvis"`、`"glass"`、`"sakura"`、`"warcraft"`，或留空使用默认覆盖层 — 仅 macOS（默认：无）
   - **jarvis**：圆形 HUD，带旋转弧线、刻度和进度环
   - **glass**：毛玻璃风格面板，带强调色条、进度线和时间戳
   - **sakura**：禅意花园，带盆景树和动态樱花花瓣
+  - **warcraft**：魔兽争霸3命令卡风格，金色边框、角色头像和动态 GIF。每个语音包有专属标题和台词（如"JOB'S DONE"、"SOMETHING NEED DOING?"）
   - **wsl_toast**：`true`/`false` — 在 WSL 上使用原生 Windows toast 通知代替 Windows Forms 弹窗。Toast 不会抢占焦点并出现在操作中心。（默认：`true`）
 - **categories**：单独开关 CESP 声音分类（例如 `"session.start": false` 禁用问候声音）
 - **annoyed_threshold / annoyed_window_seconds**：在 N 秒内多少次提示触发 `user.spam` 彩蛋
