@@ -11,6 +11,7 @@ CUSTOM_PACKS=""
 OPENCLAW_MODE=false
 NO_RC=false
 ROVODEV_ONLY=false
+LANG_FILTER=""
 for arg in "$@"; do
   case "$arg" in
     --global) LOCAL_MODE=false ;;
@@ -21,6 +22,7 @@ for arg in "$@"; do
     --no-rc) NO_RC=true ;;
     --rovodev-only) ROVODEV_ONLY=true ;;
     --packs=*) CUSTOM_PACKS="${arg#--packs=}" ;;
+    --lang=*) LANG_FILTER="${arg#--lang=}" ;;
     --help|-h)
       cat <<'HELPEOF'
 Usage: install.sh [OPTIONS]
@@ -34,6 +36,7 @@ Options:
   --no-rc              Skip .bashrc/.zshrc/fish config modifications
   --rovodev-only       Only register Rovo Dev CLI hooks, then exit
   --packs=<a,b,c>      Install specific packs
+  --lang=<en,fr,...>   Install only packs matching language(s)
 HELPEOF
       exit 0
       ;;
@@ -655,12 +658,15 @@ fi
 PACK_DL="$INSTALL_DIR/scripts/pack-download.sh"
 chmod +x "$PACK_DL" 2>/dev/null || true
 
+LANG_ARG=""
+[ -n "$LANG_FILTER" ] && LANG_ARG="--lang=$LANG_FILTER"
+
 if [ -n "$CUSTOM_PACKS" ]; then
-  bash "$PACK_DL" --dir="$INSTALL_DIR" --packs="$CUSTOM_PACKS"
+  bash "$PACK_DL" --dir="$INSTALL_DIR" --packs="$CUSTOM_PACKS" $LANG_ARG
 elif [ "$INSTALL_ALL" = true ]; then
-  bash "$PACK_DL" --dir="$INSTALL_DIR" --all
+  bash "$PACK_DL" --dir="$INSTALL_DIR" --all $LANG_ARG
 else
-  bash "$PACK_DL" --dir="$INSTALL_DIR" --packs="$(echo "$DEFAULT_PACKS" | tr ' ' ',')"
+  bash "$PACK_DL" --dir="$INSTALL_DIR" --packs="$(echo "$DEFAULT_PACKS" | tr ' ' ',')" $LANG_ARG
 fi
 
 chmod +x "$INSTALL_DIR/peon.sh"

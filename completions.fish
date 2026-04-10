@@ -62,9 +62,11 @@ complete -c peon -n "__peon_packs_subcommand rotation" -a clear -d "Clear all pa
 
 # packs install options
 complete -c peon -n "__peon_packs_subcommand install" -a "--all" -d "Install all packs from registry"
+complete -c peon -n "__peon_packs_subcommand install" -a "--lang" -d "Filter packs by language (e.g. --lang=en,fr)"
 
 # packs list options
 complete -c peon -n "__peon_packs_subcommand list" -a "--registry" -d "List all available packs from registry"
+complete -c peon -n "__peon_packs_subcommand list" -a "--lang" -d "Filter by language (e.g. --lang=en)"
 
 # Pack name completions for 'packs use' and 'packs remove'
 complete -c peon -n "__peon_packs_subcommand use" -a "(

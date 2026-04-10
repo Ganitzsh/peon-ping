@@ -27,6 +27,7 @@ PEON_DIR=""
 PACKS_CSV=""
 INSTALL_ALL=false
 LIST_REGISTRY=false
+LANG_FILTER=""
 
 for arg in "$@"; do
   case "$arg" in
@@ -34,6 +35,7 @@ for arg in "$@"; do
     --packs=*) PACKS_CSV="${arg#--packs=}" ;;
     --all) INSTALL_ALL=true ;;
     --list-registry) LIST_REGISTRY=true ;;
+    --lang=*) LANG_FILTER="${arg#--lang=}" ;;
   esac
 done
 
@@ -159,10 +161,60 @@ for p in data.get('packs', []):
   fi
 }
 
+# --- Language filter ---
+# When --lang is specified, filter ALL_PACKS and REGISTRY_JSON to only include
+# packs whose language field prefix-matches any requested code.
+# Multi-language packs (e.g. "en,ru") match if any token matches.
+apply_lang_filter() {
+  if [ -z "$LANG_FILTER" ]; then
+    return
+  fi
+  if [ -z "$REGISTRY_JSON" ]; then
+    echo "Warning: --lang filtering unavailable without registry" >&2
+    return
+  fi
+  local filtered
+  filtered=$(LANG_FILTER="$LANG_FILTER" python3 -c "
+import json, sys, os
+
+registry = json.loads(sys.stdin.read())
+codes = [c.strip() for c in os.environ['LANG_FILTER'].split(',') if c.strip()]
+
+def matches(pack):
+    lang = pack.get('language', '')
+    if not lang:
+        return False
+    pack_langs = [l.strip() for l in lang.split(',')]
+    for pl in pack_langs:
+        for code in codes:
+            if pl == code or pl.startswith(code + '-'):
+                return True
+    return False
+
+filtered_packs = [p for p in registry.get('packs', []) if matches(p)]
+registry['packs'] = filtered_packs
+print(json.dumps(registry))
+" <<< "$REGISTRY_JSON")
+  REGISTRY_JSON="$filtered"
+  ALL_PACKS=$(python3 -c "
+import json, sys
+data = json.loads(sys.stdin.read())
+for p in data.get('packs', []):
+    print(p['name'])
+" <<< "$REGISTRY_JSON")
+  if [ -z "$ALL_PACKS" ]; then
+    echo "Warning: no packs match language(s): $LANG_FILTER. Use 'peon packs list --registry --lang' to see available languages." >&2
+  fi
+}
+
 # --- List registry mode ---
 
 if [ "$LIST_REGISTRY" = true ]; then
   fetch_registry
+  apply_lang_filter
+  if [ -n "$LANG_FILTER" ] && [ -z "$ALL_PACKS" ]; then
+    exit 0
+  fi
   if [ -n "$REGISTRY_JSON" ]; then
     PEON_DIR="$(py_path "$PEON_DIR")" python3 -c "
 import json, sys, os
@@ -208,6 +260,12 @@ fi
 # --- Fetch registry and select packs ---
 
 fetch_registry
+apply_lang_filter
+
+# Exit gracefully if language filter yielded zero packs
+if [ -n "$LANG_FILTER" ] && [ -z "$ALL_PACKS" ]; then
+  exit 0
+fi
 
 if [ "$INSTALL_ALL" = true ]; then
   PACKS="$ALL_PACKS"

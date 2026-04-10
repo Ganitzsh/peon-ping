@@ -27,11 +27,15 @@ _peon_completions() {
             COMPREPLY=( $(compgen -W "$names" -- "$cur") )
           fi
         elif [ "$cword" -eq 3 ] && [ "$prev" = "install" ]; then
-          COMPREPLY=( $(compgen -W "--all" -- "$cur") )
+          COMPREPLY=( $(compgen -W "--all --lang" -- "$cur") )
+        elif [ "$cword" -eq 4 ] && [ "${words[2]}" = "install" ]; then
+          COMPREPLY=( $(compgen -W "--lang" -- "$cur") )
         elif [ "$cword" -eq 3 ] && [ "$prev" = "install-local" ]; then
           COMPREPLY=( $(compgen -d -- "$cur") )
         elif [ "$cword" -eq 3 ] && [ "$prev" = "list" ]; then
           COMPREPLY=( $(compgen -W "--registry" -- "$cur") )
+        elif [ "$cword" -eq 4 ] && [ "${words[2]}" = "list" ] && [ "$prev" = "--registry" ]; then
+          COMPREPLY=( $(compgen -W "--lang" -- "$cur") )
         elif [ "$cword" -eq 3 ] && { [ "$prev" = "use" ] || [ "$prev" = "remove" ] || [ "$prev" = "bind" ]; }; then
           packs_dir="${CLAUDE_PEON_DIR:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/peon-ping}/packs"
           [ ! -d "$packs_dir" ] && [ -d "$HOME/.openpeon/packs" ] && packs_dir="$HOME/.openpeon/packs"

@@ -36,7 +36,8 @@ setup() {
   MOCK_BIN="$(mktemp -d)"
 
   # Mock registry index.json — include all 10 default packs so install doesn't fail
-  MOCK_REGISTRY_JSON='{"packs":[{"name":"peon","display_name":"Orc Peon","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"peon"},{"name":"peasant","display_name":"Human Peasant","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"peasant"},{"name":"glados","display_name":"GLaDOS","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"glados"},{"name":"sc_kerrigan","display_name":"Sarah Kerrigan","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"sc_kerrigan"},{"name":"sc_battlecruiser","display_name":"Battlecruiser","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"sc_battlecruiser"},{"name":"ra2_kirov","display_name":"Kirov Airship","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"ra2_kirov"},{"name":"dota2_axe","display_name":"Axe","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"dota2_axe"},{"name":"duke_nukem","display_name":"Duke Nukem","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"duke_nukem"},{"name":"tf2_engineer","display_name":"Engineer","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"tf2_engineer"},{"name":"hd2_helldiver","display_name":"Helldiver","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"hd2_helldiver"},{"name":"extra_pack","display_name":"Extra Pack","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"extra_pack"}]}'
+  # language fields: most are "en", peon_fr is "fr", extra_pack is "fr" (for --lang filter tests)
+  MOCK_REGISTRY_JSON='{"packs":[{"name":"peon","display_name":"Orc Peon","language":"en","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"peon"},{"name":"peasant","display_name":"Human Peasant","language":"en","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"peasant"},{"name":"glados","display_name":"GLaDOS","language":"en","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"glados"},{"name":"sc_kerrigan","display_name":"Sarah Kerrigan","language":"en","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"sc_kerrigan"},{"name":"sc_battlecruiser","display_name":"Battlecruiser","language":"en","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"sc_battlecruiser"},{"name":"ra2_kirov","display_name":"Kirov Airship","language":"en","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"ra2_kirov"},{"name":"dota2_axe","display_name":"Axe","language":"en","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"dota2_axe"},{"name":"duke_nukem","display_name":"Duke Nukem","language":"en","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"duke_nukem"},{"name":"tf2_engineer","display_name":"Engineer","language":"en","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"tf2_engineer"},{"name":"hd2_helldiver","display_name":"Helldiver","language":"en","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"hd2_helldiver"},{"name":"extra_pack","display_name":"Extra Pack","language":"fr","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"extra_pack"}]}'
 
   # Generic manifest template (used for any openpeon.json request)
   MOCK_MANIFEST='{"cesp_version":"1.0","name":"mock","display_name":"Mock Pack","categories":{"session.start":{"sounds":[{"file":"sounds/Hello1.wav","label":"Hello"}]},"task.complete":{"sounds":[{"file":"sounds/Done1.wav","label":"Done"}]}}}'
@@ -599,4 +600,29 @@ EOF
   run bash "$CLONE_DIR/install.sh" --help
   [ "$status" -eq 0 ]
   [[ "$output" == *"--rovodev-only"* ]]
+}
+
+# ============================================================
+# --lang (language filtering)
+# ============================================================
+
+@test "--all --lang=fr installs only French packs" {
+  bash "$CLONE_DIR/install.sh" --all --lang=fr
+  # extra_pack is the only French pack in our mock registry
+  [ -d "$INSTALL_DIR/packs/extra_pack" ]
+  # English packs should NOT be installed
+  [ ! -d "$INSTALL_DIR/packs/peon" ]
+  [ ! -d "$INSTALL_DIR/packs/glados" ]
+}
+
+@test "--lang=xx shows zero-match warning" {
+  run bash "$CLONE_DIR/install.sh" --all --lang=xx
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no packs match language"* ]]
+}
+
+@test "--lang appears in --help output" {
+  run bash "$CLONE_DIR/install.sh" --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"--lang"* ]]
 }

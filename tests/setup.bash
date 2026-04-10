@@ -476,9 +476,9 @@ teardown_test_env() {
 
 # Set up mock fixtures for pack-download.sh tests
 setup_pack_download_env() {
-  # Mock registry JSON
+  # Mock registry JSON (includes language field for --lang filter tests)
   cat > "$TEST_DIR/.mock_registry_json" <<'JSON'
-{"packs":[{"name":"test_pack_a","display_name":"Test Pack A","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"test_pack_a"},{"name":"test_pack_b","display_name":"Test Pack B","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"test_pack_b"}]}
+{"packs":[{"name":"test_pack_a","display_name":"Test Pack A","language":"en","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"test_pack_a"},{"name":"test_pack_b","display_name":"Test Pack B","language":"fr","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"test_pack_b"},{"name":"test_pack_c","display_name":"Test Pack C","language":"en-GB","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"test_pack_c"},{"name":"test_pack_d","display_name":"Test Pack D","language":"en,ru","source_repo":"PeonPing/og-packs","source_ref":"v1.0.0","source_path":"test_pack_d"}]}
 JSON
 
   # Mock manifest (used for any openpeon.json download)

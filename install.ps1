@@ -6,7 +6,8 @@
 param(
     [Parameter()]
     $Packs = @(),
-    [switch]$All
+    [switch]$All,
+    [string]$Lang = ""
 )
 
 # When run via Invoke-Expression (one-liner install), $PSScriptRoot is empty.
@@ -109,6 +110,29 @@ if ($Packs -and $Packs.Count -gt 0) {
     $defaultPacks = @("peon", "peasant", "glados", "sc_kerrigan", "sc_battlecruiser", "ra2_kirov", "dota2_axe", "duke_nukem", "tf2_engineer", "hd2_helldiver")
     $packsToInstall = $registry.packs | Where-Object { $_.name -in $defaultPacks }
     Write-Host "  Installing $($packsToInstall.Count) packs (use -All for all $($registry.packs.Count))..." -ForegroundColor Cyan
+}
+
+# --- Language filter ---
+if ($Lang) {
+    $langCodes = $Lang -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+    $packsToInstall = @($packsToInstall | Where-Object {
+        $packLangs = ($_.language -split ',') | ForEach-Object { $_.Trim() }
+        $match = $false
+        foreach ($pl in $packLangs) {
+            foreach ($code in $langCodes) {
+                if ($pl -eq $code -or $pl.StartsWith("$code-")) {
+                    $match = $true; break
+                }
+            }
+            if ($match) { break }
+        }
+        $match
+    })
+    if ($packsToInstall.Count -eq 0) {
+        Write-Host "Warning: no packs match language(s): $Lang" -ForegroundColor Yellow
+    } else {
+        Write-Host "  Filtered to $($packsToInstall.Count) pack(s) matching language: $Lang" -ForegroundColor Cyan
+    }
 }
 
 # --- Create directories ---

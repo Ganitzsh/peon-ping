@@ -195,3 +195,76 @@ JSON
   result=$(urlencode_filename "Hello.wav")
   [ "$result" = "Hello.wav" ]
 }
+
+# ============================================================
+# --lang (language filtering)
+# ============================================================
+
+@test "--lang=en with --all installs English packs (prefix match + multi-lang)" {
+  run bash "$PACK_DL_SH" --dir="$TEST_DIR" --all --lang=en
+  [ "$status" -eq 0 ]
+  # test_pack_a (en), test_pack_c (en-GB), test_pack_d (en,ru) should match
+  [ -d "$TEST_DIR/packs/test_pack_a" ]
+  [ -d "$TEST_DIR/packs/test_pack_c" ]
+  [ -d "$TEST_DIR/packs/test_pack_d" ]
+  # test_pack_b (fr) should NOT match
+  [ ! -d "$TEST_DIR/packs/test_pack_b" ]
+}
+
+@test "--lang=fr with --all installs only French packs" {
+  run bash "$PACK_DL_SH" --dir="$TEST_DIR" --all --lang=fr
+  [ "$status" -eq 0 ]
+  [ -d "$TEST_DIR/packs/test_pack_b" ]
+  [ ! -d "$TEST_DIR/packs/test_pack_a" ]
+  [ ! -d "$TEST_DIR/packs/test_pack_c" ]
+  [ ! -d "$TEST_DIR/packs/test_pack_d" ]
+}
+
+@test "--lang=en-GB with --all installs only exact en-GB pack" {
+  run bash "$PACK_DL_SH" --dir="$TEST_DIR" --all --lang=en-GB
+  [ "$status" -eq 0 ]
+  [ -d "$TEST_DIR/packs/test_pack_c" ]
+  [ ! -d "$TEST_DIR/packs/test_pack_a" ]
+  [ ! -d "$TEST_DIR/packs/test_pack_b" ]
+  [ ! -d "$TEST_DIR/packs/test_pack_d" ]
+}
+
+@test "--lang=ru with --all installs multi-lang pack" {
+  run bash "$PACK_DL_SH" --dir="$TEST_DIR" --all --lang=ru
+  [ "$status" -eq 0 ]
+  [ -d "$TEST_DIR/packs/test_pack_d" ]
+  [ ! -d "$TEST_DIR/packs/test_pack_a" ]
+  [ ! -d "$TEST_DIR/packs/test_pack_b" ]
+  [ ! -d "$TEST_DIR/packs/test_pack_c" ]
+}
+
+@test "--lang=xx with --all prints zero-match warning" {
+  run bash "$PACK_DL_SH" --dir="$TEST_DIR" --all --lang=xx
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no packs match language"* ]]
+}
+
+@test "--list-registry --lang=en shows only English packs" {
+  run bash "$PACK_DL_SH" --list-registry --dir="$TEST_DIR" --lang=en
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"test_pack_a"* ]]
+  [[ "$output" == *"test_pack_c"* ]]
+  [[ "$output" == *"test_pack_d"* ]]
+  [[ "$output" != *"test_pack_b"* ]]
+}
+
+@test "--list-registry --lang=fr shows only French packs" {
+  run bash "$PACK_DL_SH" --list-registry --dir="$TEST_DIR" --lang=fr
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"test_pack_b"* ]]
+  [[ "$output" != *"test_pack_a"* ]]
+}
+
+@test "no --lang downloads all packs unchanged" {
+  run bash "$PACK_DL_SH" --dir="$TEST_DIR" --all
+  [ "$status" -eq 0 ]
+  [ -d "$TEST_DIR/packs/test_pack_a" ]
+  [ -d "$TEST_DIR/packs/test_pack_b" ]
+  [ -d "$TEST_DIR/packs/test_pack_c" ]
+  [ -d "$TEST_DIR/packs/test_pack_d" ]
+}

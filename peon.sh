@@ -1665,8 +1665,14 @@ print('peon-ping: rotation mode set to ' + mode)
     case "${2:-}" in
       list)
         if [ "${3:-}" = "--registry" ]; then
+          LIST_LANG=""
+          for _larg in "${@:4}"; do
+            case "$_larg" in
+              --lang=*) LIST_LANG="$_larg" ;;
+            esac
+          done
           PACK_DL="$(resolve_pack_download)" || exit 1
-          bash "$PACK_DL" --list-registry --dir="$PEON_DIR"
+          bash "$PACK_DL" --list-registry --dir="$PEON_DIR" $LIST_LANG
           exit 0
         fi
         python3 -c "
@@ -2110,15 +2116,23 @@ if rotation:
 "
         sync_adapter_configs; exit 0 ;;
       install)
-        INSTALL_ARG="${3:-}"
+        INSTALL_ARG=""
+        INSTALL_LANG=""
+        for _iarg in "${@:3}"; do
+          case "$_iarg" in
+            --lang=*) INSTALL_LANG="$_iarg" ;;
+            *) [ -z "$INSTALL_ARG" ] && INSTALL_ARG="$_iarg" ;;
+          esac
+        done
         PACK_DL="$(resolve_pack_download)" || exit 1
         if [ "$INSTALL_ARG" = "--all" ]; then
-          bash "$PACK_DL" --dir="$PEON_DIR" --all
+          bash "$PACK_DL" --dir="$PEON_DIR" --all $INSTALL_LANG
         elif [ -n "$INSTALL_ARG" ]; then
-          bash "$PACK_DL" --dir="$PEON_DIR" --packs="$INSTALL_ARG"
+          bash "$PACK_DL" --dir="$PEON_DIR" --packs="$INSTALL_ARG" $INSTALL_LANG
         else
           echo "Usage: peon packs install <pack1,pack2,...>" >&2
           echo "       peon packs install --all" >&2
+          echo "       peon packs install --all --lang=<en,fr,...>" >&2
           echo "" >&2
           echo "Run 'peon packs list --registry' to see available packs." >&2
           exit 1
@@ -2867,8 +2881,10 @@ Commands:
 Pack management:
   packs list              List installed sound packs
   packs list --registry   List all available packs from registry
+  packs list --registry --lang=<codes> Filter registry list by language
   packs install <p1,p2>   Download and install new packs
   packs install --all     Download all packs from registry
+  packs install --all --lang=<codes> Download packs matching language(s)
   packs install-local <path> Install a pack from a local directory
   packs use <name>        Switch to a specific pack
   packs use --install <n> Switch to pack, installing from registry if needed
