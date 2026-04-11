@@ -71,16 +71,16 @@ function Invoke-NativeMediaPlayback {
     return $false
 }
 
-# Prefer native Windows playback for WAV files first. Other formats use CLI players
-# because codec availability for MediaPlayer is inconsistent across Windows installs.
-if ($path -match '\.wav$') {
+# Prefer native Windows playback for formats with reliable built-in codec support.
+# Exotic formats still fall through to the CLI player chain.
+if ($path -match '\.(wav|mp3|wma)$') {
     if (Invoke-NativeMediaPlayback -Path $path -vol $vol) {
         exit 0
     }
 }
 
-# Non-WAV formats (mp3, ogg, etc.): CLI player priority chain
-# ffplay -> mpv -> vlc (MediaPlayer only handles WAV above; CLI players for other formats)
+# Exotic formats (ogg, flac, etc.): CLI player priority chain
+# ffplay -> mpv -> vlc (MediaPlayer handles wav/mp3/wma above; CLI players for everything else)
 
 # ffplay: volume 0-100 integer scale
 $ffplay = Get-Command ffplay -ErrorAction SilentlyContinue
