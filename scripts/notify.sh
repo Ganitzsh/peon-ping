@@ -177,6 +177,26 @@ case "$PEON_PLATFORM" in
       local_icon_arg=""
       [ -f "$icon_path" ] && local_icon_arg="$icon_path"
       _run_overlay() (
+        # Kill stale overlay processes from prior invocations (older than 30s)
+        # This prevents accumulation if NSTimer or watchdog failed to terminate them
+        if command -v pgrep &>/dev/null; then
+          local _stale_pids
+          _stale_pids=$(pgrep -f "mac-overlay" 2>/dev/null || true)
+          if [ -n "$_stale_pids" ]; then
+            for _sp in $_stale_pids; do
+              # ps etime format: [[dd-]hh:]mm:ss
+              local _etime
+              _etime=$(ps -o etime= -p "$_sp" 2>/dev/null | sed 's/^[[:space:]]*//' ) || continue
+              case "$_etime" in
+                *-*|*:*:*) kill "$_sp" 2>/dev/null || true ;;  # days or hours — definitely stale
+                *:*)  # MM:SS format
+                  local _mins="${_etime%%:*}"
+                  [ "${_mins:-0}" -gt 0 ] && kill "$_sp" 2>/dev/null || true
+                  ;;
+              esac
+            done
+          fi
+        fi
         slot_dir="/tmp/peon-ping-popups"; mkdir -p "$slot_dir"
         slot=0
         while [ "$slot" -lt 5 ] && ! mkdir "$slot_dir/slot-$slot" 2>/dev/null; do
@@ -213,9 +233,16 @@ case "$PEON_PLATFORM" in
         else
           _max_wait=$(python3 -c "print(int(float('${dismiss_secs}'))+5)" 2>/dev/null || echo '9')
         fi
+        local _watchdog_pids=""
         for _pid in $_overlay_pids; do
           ( sleep "$_max_wait" && kill "$_pid" 2>/dev/null ) &
+          _watchdog_pids="$_watchdog_pids $!"
           wait "$_pid" 2>/dev/null || true
+          # Kill the watchdog now that the overlay has exited normally
+          # This prevents orphaned sleep subshells from accumulating
+          local _last_wd="${_watchdog_pids##* }"
+          kill "$_last_wd" 2>/dev/null || true
+          wait "$_last_wd" 2>/dev/null || true
         done
         rm -rf "$slot_dir/slot-$slot"
       )

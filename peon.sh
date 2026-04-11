@@ -4536,6 +4536,25 @@ if [ -n "$TAB_COLOR_RGB" ] && { [[ "${TERM_PROGRAM:-}" == "iTerm.app" ]] || [ -n
 fi
 
 _run_sound_and_notify() {
+  # Kill stale mac-overlay processes from prior invocations
+  if [ "$PEON_PLATFORM" = "mac" ] && command -v pgrep &>/dev/null; then
+    local _stale_pids
+    _stale_pids=$(pgrep -f "mac-overlay" 2>/dev/null || true)
+    if [ -n "$_stale_pids" ]; then
+      for _sp in $_stale_pids; do
+        local _etime
+        _etime=$(ps -o etime= -p "$_sp" 2>/dev/null | sed 's/^[[:space:]]*//' ) || continue
+        case "$_etime" in
+          *-*|*:*:*) kill "$_sp" 2>/dev/null || true ;;
+          *:*)
+            local _mins="${_etime%%:*}"
+            [ "${_mins:-0}" -gt 0 ] && kill "$_sp" 2>/dev/null || true
+            ;;
+        esac
+      done
+    fi
+  fi
+
   local _focused=""  # lazy: empty = not yet checked
 
   # --- Shared suppression checks (apply to both sound and TTS) ---
