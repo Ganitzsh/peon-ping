@@ -3466,6 +3466,7 @@ annoyed_threshold = int(cfg.get('annoyed_threshold', 3))
 annoyed_window = float(cfg.get('annoyed_window_seconds', 10))
 silent_window = float(cfg.get('silent_window_seconds', 0))
 suppress_subagent_complete = str(cfg.get('suppress_subagent_complete', False)).lower() == 'true'
+suppress_delegate = str(cfg.get('suppress_delegate_sessions', False)).lower() == 'true'
 headphones_only = str(cfg.get('headphones_only', False)).lower() == 'true'
 meeting_detect = str(cfg.get('meeting_detect', False)).lower() == 'true'
 suppress_sound_when_tab_focused = str(cfg.get('suppress_sound_when_tab_focused', False)).lower() == 'true'
@@ -3516,20 +3517,21 @@ log('state', sessions=len(state.get('agent_sessions', [])), rotation_index=state
 
 # --- Agent detection ---
 agent_sessions = set(state.get('agent_sessions', []))
-if perm_mode and perm_mode in agent_modes:
-    agent_sessions.add(session_id)
-    state['agent_sessions'] = list(agent_sessions)
-    state_dirty = True
-    log('route', category='none', suppressed=True, reason='delegate_mode')
-    log('exit', duration_ms=int((time.monotonic() - _peon_start) * 1000), exit=0)
-    print('PEON_EXIT=true')
-    write_state(state, state_file)
-    sys.exit(0)
-elif session_id in agent_sessions:
-    log('route', category='none', suppressed=True, reason='agent_session')
-    log('exit', duration_ms=int((time.monotonic() - _peon_start) * 1000), exit=0)
-    print('PEON_EXIT=true')
-    sys.exit(0)
+if suppress_delegate:
+    if perm_mode and perm_mode in agent_modes:
+        agent_sessions.add(session_id)
+        state['agent_sessions'] = list(agent_sessions)
+        state_dirty = True
+        log('route', category='none', suppressed=True, reason='delegate_mode')
+        log('exit', duration_ms=int((time.monotonic() - _peon_start) * 1000), exit=0)
+        print('PEON_EXIT=true')
+        write_state(state, state_file)
+        sys.exit(0)
+    elif session_id in agent_sessions:
+        log('route', category='none', suppressed=True, reason='agent_session')
+        log('exit', duration_ms=int((time.monotonic() - _peon_start) * 1000), exit=0)
+        print('PEON_EXIT=true')
+        sys.exit(0)
 
 # --- Session cleanup: expire old sessions ---
 now = time.time()
@@ -3832,6 +3834,7 @@ elif event == 'Notification':
         status = 'needs approval'
         marker = '\u25cf '
     elif ntype == 'idle_prompt':
+        category = 'task.complete'
         status = 'done'
         marker = '\u25cf '
         notify = '1'

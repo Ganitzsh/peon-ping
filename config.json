@@ -17,6 +17,7 @@
   "silent_window_seconds": 0,
   "session_start_cooldown_seconds": 30,
   "suppress_subagent_complete": false,
+  "suppress_delegate_sessions": false,
   "no_rc": false,
   "pack_rotation": [],
   "pack_rotation_mode": "random",

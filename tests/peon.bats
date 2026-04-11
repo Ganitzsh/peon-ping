@@ -79,10 +79,12 @@ json.dump(state, open('$TEST_DIR/.state.json', 'w'))
   [[ "$sound" == *"/packs/peon/sounds/Perm"* ]]
 }
 
-@test "Notification idle_prompt does NOT play sound (Stop handles it)" {
+@test "Notification idle_prompt plays a complete sound" {
   run_peon '{"hook_event_name":"Notification","notification_type":"idle_prompt","cwd":"/tmp/myproject","session_id":"s1","permission_mode":"default"}'
   [ "$PEON_EXIT" -eq 0 ]
-  ! afplay_was_called
+  afplay_was_called
+  sound=$(afplay_sound)
+  [[ "$sound" == *"/packs/peon/sounds/Done"* ]]
 }
 
 @test "Stop plays a complete sound" {
@@ -261,13 +263,31 @@ JSON
   afplay_was_called
 }
 
-@test "delegate mode suppresses sound (agent session)" {
+@test "delegate mode plays sound by default (suppress_delegate_sessions off)" {
+  run_peon '{"hook_event_name":"SessionStart","cwd":"/tmp/myproject","session_id":"agent1","permission_mode":"delegate"}'
+  [ "$PEON_EXIT" -eq 0 ]
+  afplay_was_called
+}
+
+@test "delegate mode suppresses sound when suppress_delegate_sessions is true" {
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['suppress_delegate_sessions'] = True
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
   run_peon '{"hook_event_name":"SessionStart","cwd":"/tmp/myproject","session_id":"agent1","permission_mode":"delegate"}'
   [ "$PEON_EXIT" -eq 0 ]
   ! afplay_was_called
 }
 
-@test "agent session is remembered across events" {
+@test "agent session is remembered across events when suppress_delegate_sessions is true" {
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['suppress_delegate_sessions'] = True
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
   # First event marks it as agent
   run_peon '{"hook_event_name":"SessionStart","cwd":"/tmp/myproject","session_id":"agent2","permission_mode":"delegate"}'
   ! afplay_was_called
@@ -4356,6 +4376,13 @@ json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
 
 @test "debug log emits [exit] on delegate_mode early exit" {
   enable_debug_logging
+  # Enable suppress_delegate_sessions so delegate mode actually suppresses
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['suppress_delegate_sessions'] = True
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
   # Trigger delegate_mode by sending a PermissionRequest with permission_mode=dangerouslySkipPermissions
   run_peon '{"hook_event_name":"PermissionRequest","cwd":"/tmp/myproject","session_id":"s-del","permission_mode":"dangerouslySkipPermissions"}'
   [ "$PEON_EXIT" -eq 0 ]
@@ -4372,6 +4399,13 @@ json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
 
 @test "debug log emits [exit] on agent_session early exit" {
   enable_debug_logging
+  # Enable suppress_delegate_sessions so delegate mode actually suppresses
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['suppress_delegate_sessions'] = True
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
   # First, register session as delegate by sending with permission_mode
   run_peon '{"hook_event_name":"PermissionRequest","cwd":"/tmp/myproject","session_id":"s-agent","permission_mode":"dangerouslySkipPermissions"}'
   [ "$PEON_EXIT" -eq 0 ]
@@ -4471,6 +4505,13 @@ for m in re.finditer(r'(\w+)=(\"[^\"]*\"|\S*)', line):
 
 @test "fixture: delegate-mode produces suppressed route" {
   enable_debug_logging
+  # Enable suppress_delegate_sessions so delegate mode actually suppresses
+  /usr/bin/python3 -c "
+import json
+cfg = json.load(open('$TEST_DIR/config.json'))
+cfg['suppress_delegate_sessions'] = True
+json.dump(cfg, open('$TEST_DIR/config.json', 'w'))
+"
   validate_log_fixture "delegate-mode"
 }
 
