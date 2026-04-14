@@ -1,5 +1,6 @@
 {
-  "default_pack": "peon",
+  "default_pack": "peasant",
+  "overlay_theme": "warcraft",
   "volume": 0.5,
   "enabled": true,
   "desktop_notifications": true,

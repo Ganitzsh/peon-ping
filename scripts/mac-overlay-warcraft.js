@@ -226,6 +226,11 @@ function run(argv) {
 
   // Check for animated.gif — if present, reserve space on the right for it
   var packDir = iconPath ? ObjC.unwrap($(iconPath).stringByDeletingLastPathComponent) : '';
+  // Prefer icon.png in the pack directory (warcraft-themed portrait) over the generic manifest icon
+  var themeIcon = packDir ? packDir + '/icon.png' : '';
+  if (themeIcon && $.NSFileManager.defaultManager.fileExistsAtPath($(themeIcon))) {
+    iconPath = themeIcon;
+  }
   var animatedGifPath = packDir ? packDir + '/animated.gif' : '';
   var hasAnimatedGif = animatedGifPath && $.NSFileManager.defaultManager.fileExistsAtPath($(animatedGifPath));
 

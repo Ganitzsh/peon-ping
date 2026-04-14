@@ -20,7 +20,7 @@ py_path() {
 # Fallback pack list (used if registry is unreachable)
 FALLBACK_PACKS="acolyte_de acolyte_ru aoe2 aom_greek brewmaster_ru dota2_axe duke_nukem glados hd2_helldiver molag_bal murloc ocarina_of_time peon peon_cz peon_de peon_es peon_fr peon_pl peon_ru peasant peasant_cz peasant_es peasant_fr peasant_ru ra2_kirov ra2_soviet_engineer ra_soviet rick sc_battlecruiser sc_firebat sc_kerrigan sc_medic sc_scv sc_tank sc_terran sc_vessel sheogorath sopranos tf2_engineer wc2_peasant"
 FALLBACK_REPO="Ganitzsh/og-packs"
-FALLBACK_REF="v1.1.0"
+FALLBACK_REF="main"
 
 # Parse arguments
 PEON_DIR=""
@@ -319,6 +319,11 @@ for p in data.get('packs', []):
     SOURCE_REPO=$(printf '%s\n' "$PACK_META" | sed -n '1p')
     SOURCE_REF=$(printf '%s\n' "$PACK_META" | sed -n '2p')
     SOURCE_PATH=$(printf '%s\n' "$PACK_META" | sed -n '3p')
+    # Redirect official og-packs to the configured fork
+    if [ "$SOURCE_REPO" = "PeonPing/og-packs" ]; then
+      SOURCE_REPO="$FALLBACK_REPO"
+      SOURCE_REF="$FALLBACK_REF"
+    fi
   fi
 
   if [ -n "$SOURCE_REPO" ] && ! is_safe_source_repo "$SOURCE_REPO"; then
@@ -404,6 +409,15 @@ print(len(seen))
       fi
     done <<< "$ICON_LIST"
   fi
+
+  # Probe for optional overlay assets not declared in the manifest (e.g. animated.gif, icon.png)
+  for _extra in animated.gif icon.png; do
+    if curl -fsSL "$PACK_BASE/$_extra" -o "$PEON_DIR/packs/$pack/$_extra" 2>/dev/null; then
+      : # downloaded
+    else
+      rm -f "$PEON_DIR/packs/$pack/$_extra"
+    fi
+  done
 
   if [ "$IS_TTY" = true ] && [ "$SOUND_COUNT" != "?" ]; then
     local_file_count=0
